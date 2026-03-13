@@ -1,0 +1,179 @@
+dist/
+cms/dist/
+cms/.next/
+cms/.next-dev/
+
+# Dependency directories
+node_modules/
+cms/node_modules/
+.pnpm-store/
+.venv/
+
+# Tooling and editor cruft
+.vscode/
+.DS_Store
+__pycache__/
+*.py[cod]
+.docker/dev-image.hash
+
+# Logs
+*.log
+deploy-logs/
+$outfile
+
+# Generated docs and tooling state (local-only)
+docs/planning/plans-export/
+.openai-usage-state.json
+
+# Local build/deploy scratch
+tmp/
+.tmp/
+**/.tmp/
+artifacts/
+
+# Local data dumps
+backups/
+dbdump/
+
+# Test artifacts
+frontend/test-results/
+frontend/node-compile-cache/
+
+# Environment files
+deploy.env
+scripts/deploy.env
+.env*
+!.env.example
+!.env.deploy.example
+!deploy.env.example
+
+# Secrets & credentials
+.ssh-known-hosts
+secrets/
+*.pem
+*.key
+*.p8
+*.p12
+*.pfx
+*.cer
+*.crt
+*.csr
+*.der
+*.gpg
+*.pgp
+*.ppk
+*.ovpn
+*.kdb
+*.jks
+*.token
+*.secrets
+*.secret
+*.credentials
+*.jwt
+*.session
+*.sessiontoken
+*.cookies
+
+# Hetzner SSH keys
+infrastructure/hetzner/id_ed25519
+infrastructure/hetzner/id_ed25519.pub
+
+# Operational/private code
+!cms/**
+cms/.env
+cms/.env.*
+cms/.next/
+cms/.next-dev/
+cms/.tmp/
+cms/.payload/
+cms/node_modules/
+cms/.pnpm-store/
+cms/.DS_Store
+cms/**/*.DS_Store
+infrastructure/
+scripts/deploy_cms.sh
+scripts/deploy_hetzner.sh
+deploy_hetzner.sh
+scripts/.ionos-env
+scripts/S
+
+# Asset uploads
+assets/
+!frontend/app/assets
+!frontend/app/assets/
+!frontend/app/assets/*
+!frontend/app/assets/**
+!frontend/public/assets
+!frontend/public/assets/
+!frontend/public/assets/*
+!frontend/public/assets/**
+
+# Terraform state and secrets
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+
+# Local databases
+cms/payload.db
+*.db
+*.db3
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+
+# >>> Managed sensitive globs (auto-generated)
+# Managed by scripts/protect_secrets.py
+.env
+.env.*
+!.env.example
+!.env.*.example
+deploy.env
+scripts/deploy.env
+*.pem
+*.key
+*.p8
+*.p12
+*.pfx
+*.cer
+*.crt
+*.csr
+*.der
+*.gpg
+*.pgp
+*.ppk
+*.ovpn
+*.kdb
+*.jks
+*.token
+*.secrets
+*.secret
+*.credentials
+assets/
+backups/
+secrets/
+private/
+cms/.next/
+cms/.turbo/
+cms/.vercel/
+cms/.payload/
+cms/.cache/
+cms/out/
+cms/media/
+cms/public/media/
+cms/storage/
+*.tsbuildinfo
+# <<< Managed sensitive globs (auto-generated)
+
+# >>> Auto-added sensitive paths (generated)
+# Paths detected as sensitive. Edit with care.
+config/public-export-forbidden-patterns.local.txt
+# <<< Auto-added sensitive paths (generated)
+
+AGENTS.md
+*_AGENT.md
+.codex/AGENTS.template.md
