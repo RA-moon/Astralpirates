@@ -1,9 +1,0 @@
-[
-  {
-    "id": "fixture-no-refs-plan",
-    "path": "docs/planning/fixture-no-refs-plan.md",
-    "tier": "tier1",
-    "status": "active",
-    "cloudStatus": "healthy"
-  }
-]

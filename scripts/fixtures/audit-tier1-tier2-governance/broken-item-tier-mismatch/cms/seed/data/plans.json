@@ -1,9 +1,0 @@
-[
-  {
-    "id": "fixture-clean-plan",
-    "path": "docs/planning/fixture-clean-plan.md",
-    "tier": "tier2",
-    "status": "shipped",
-    "cloudStatus": "healthy"
-  }
-]

@@ -1,9 +1,0 @@
-[
-  {
-    "id": "fixture-clean-plan",
-    "path": "cms/seed/data/fixture-clean-plan.json",
-    "tier": "tier1",
-    "status": "shipped",
-    "cloudStatus": "healthy"
-  }
-]

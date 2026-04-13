@@ -1,1 +1,0 @@
-# Fixture Clean Run Log

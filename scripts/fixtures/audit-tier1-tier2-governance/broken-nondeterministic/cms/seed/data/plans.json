@@ -1,9 +1,0 @@
-[
-  {
-    "id": "fixture-nondeterministic-plan",
-    "path": "docs/planning/fixture-nondeterministic-plan.md",
-    "tier": "tier1",
-    "status": "shipped",
-    "cloudStatus": "healthy"
-  }
-]

@@ -1,9 +1,0 @@
-[
-  {
-    "id": "fixture-broken-plan",
-    "path": "docs/planning/fixture-broken-plan.md",
-    "tier": "tier1",
-    "status": "shipped",
-    "cloudStatus": "healthy"
-  }
-]
