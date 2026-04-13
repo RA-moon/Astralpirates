@@ -1,0 +1,28 @@
+FROM node:20.19.0@sha256:a5fb035ac1dff34a4ecaea85f90f7321185695d3fd22c12ba12f4535a4647cc5 AS base
+
+ARG NPM_REGISTRY_URL=https://registry.npmjs.org
+
+# Install pnpm from the vendored tarball to avoid network fetches during corepack prepare.
+ENV PNPM_HOME=/usr/local/bin \
+  PATH=/usr/local/bin:$PATH \
+  npm_config_registry=${NPM_REGISTRY_URL} \
+  pnpm_config_registry=${NPM_REGISTRY_URL}
+COPY docker/vendor/pnpm-10.20.0.tgz /tmp/pnpm.tgz
+RUN npm install -g /tmp/pnpm.tgz && rm /tmp/pnpm.tgz
+
+WORKDIR /workspace
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY frontend/package.json frontend/
+COPY cms/package.json cms/
+COPY shared/package.json shared/
+
+RUN --mount=type=cache,id=pnpm-store,target=/root/.pnpm-store pnpm fetch
+RUN --mount=type=cache,id=pnpm-store,target=/root/.pnpm-store pnpm install --frozen-lockfile --ignore-scripts
+
+RUN mkdir -p /opt/node-modules-cache/root \
+  && cp -R node_modules/. /opt/node-modules-cache/root/ \
+  && mkdir -p /opt/node-modules-cache/frontend \
+  && cp -R frontend/node_modules/. /opt/node-modules-cache/frontend/ \
+  && mkdir -p /opt/node-modules-cache/cms \
+  && cp -R cms/node_modules/. /opt/node-modules-cache/cms/

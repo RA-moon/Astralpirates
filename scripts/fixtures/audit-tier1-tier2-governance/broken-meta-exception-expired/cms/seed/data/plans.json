@@ -1,0 +1,11 @@
+{
+  "plans": [
+    {
+      "id": "fixture-meta-exception-expired",
+      "path": "docs/planning/fixture-meta-exception-expired.md",
+      "tier": "tier1",
+      "status": "shipped",
+      "cloudStatus": "healthy"
+    }
+  ]
+}

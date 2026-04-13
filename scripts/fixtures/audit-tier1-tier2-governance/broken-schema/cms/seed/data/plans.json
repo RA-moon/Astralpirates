@@ -1,0 +1,11 @@
+{
+  "plans": [
+    {
+      "id": "fixture-broken-schema-plan"
+    },
+    {
+      "id": 99,
+      "path": 42
+    }
+  ]
+}

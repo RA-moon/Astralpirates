@@ -1,0 +1,9 @@
+[
+  {
+    "id": "fixture-unresolved-plan",
+    "path": "docs/planning/does-not-exist.md",
+    "tier": "tier1",
+    "status": "shipped",
+    "cloudStatus": "healthy"
+  }
+]

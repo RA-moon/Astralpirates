@@ -16,4 +16,4 @@ Last updated: 2026-03-13
 - Governance consistency across access and editor flows.
 - Additional automation for release and operational verification.
 
-For roadmap direction, see `ROADMAP.md`.
+Internal roadmap/planning docs are intentionally excluded from the public mirror.

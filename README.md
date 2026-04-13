@@ -1,44 +1,28 @@
 # Astral Pirates (Public Repository)
 
-This repository is a sanitized, high-level mirror of the private Astral Pirates monorepo.
+This repository is an open-source code mirror of the Astral Pirates monorepo.
 
-It is intentionally focused on:
-- what is currently working
-- how the platform is structured at a high level
-- what is planned next
+It intentionally includes implemented application code while excluding internal planning and
+operations-only material.
 
-## What Works Today
+## Included
 
-- User accounts, authentication, and crew role management.
-- Flight-plan collaboration flows (owner and crew coordination).
-- Mission task workflows and mission media handling.
-- Core deploy/backup reliability hardening already shipped.
+- Frontend application implementation (`frontend/`)
+- CMS/API implementation (`cms/`)
+- Shared libraries/contracts (`shared/`)
+- Supporting workspace and build files required to understand and run the code
 
-Current high-level status is tracked in `STATUS.md`.
+## Excluded
 
-## How It Works (High Level)
+- Internal planning docs and roadmap/planning archives
+- Run logs and incident/operations notes
+- Private deployment/ops scripts and infrastructure internals
+- Seed data and any non-example secret/env files
 
-- **Frontend**: Nuxt-based web application.
-- **Backend/CMS**: Payload/Next.js API and content management.
-- **Shared contracts**: typed shared package used across app and backend.
-- **Operations**: CI/CD, backup/restore, and runtime guardrails are maintained in the private repository.
+## Public Release Model
 
-## What Is Planned
+- Export is strict opt-in and default-deny (`config/public-export-optin-manifest.txt` in private repo).
+- Additional guardrails enforce blocklists, prohibited paths, and forbidden literal scans.
+- Public snapshot content can be verified in dry-run before publishing.
 
-Roadmap direction is summarized in `ROADMAP.md` using high-level themes and priorities.
-
-## Public Boundary
-
-This public repository does **not** include:
-- detailed internal planning and run logs
-- deployment/infrastructure internals
-- security/incident operational detail
-- personal identity seed data or private contact details
-
-## Release Policy
-
-- Public updates are generated from a strict opt-in export.
-- New files are excluded by default unless explicitly approved.
-- Export history can be rewritten to a clean root snapshot when needed for hygiene.
-
-Operational source of truth remains private.
+The private repository remains the operational source of truth for internal runbooks and planning.

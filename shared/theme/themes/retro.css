@@ -1,0 +1,41 @@
+/* Retro overlay inspired by logbook retrospectives */
+[data-theme='retro'] {
+  --color-background-base: #0f0906;
+  --color-background-page: #140d09;
+  --color-surface-panel: rgba(255, 213, 171, 0.08);
+  --color-surface-panel-strong: rgba(75, 32, 12, 0.55);
+  --color-surface-dialog: rgba(25, 14, 6, 0.95);
+  --color-surface-overlay: rgba(10, 6, 2, 0.82);
+  --color-surface-overlay-strong: rgba(15, 9, 4, 0.92);
+  --color-border-strong: rgba(255, 197, 143, 0.5);
+  --color-border-panel: rgba(255, 197, 143, 0.24);
+  --color-border-panel-strong: rgba(255, 197, 143, 0.35);
+  --color-border-dialog: rgba(255, 213, 171, 0.4);
+  --color-text-primary: #fff2df;
+  --color-text-secondary: rgba(255, 226, 195, 0.9);
+  --color-text-muted: rgba(255, 226, 195, 0.72);
+  --color-text-faint: rgba(255, 226, 195, 0.6);
+  --color-accent-primary: #ff7b00;
+  --color-accent-secondary: #3ad5ff;
+  --color-accent-tertiary: #ffe156;
+  --color-success: #9be564;
+  --color-warning: #ffb347;
+  --color-danger: #ff5e5b;
+  --color-info: #6fe4ff;
+  --gradient-button-default: linear-gradient(135deg, rgba(255, 123, 0, 0.72), rgba(255, 225, 86, 0.35));
+  --gradient-button-hover: linear-gradient(135deg, rgba(255, 123, 0, 0.85), rgba(255, 225, 86, 0.5));
+  --color-button-secondary-background: rgba(255, 213, 171, 0.08);
+  --color-button-secondary-border: rgba(255, 213, 171, 0.4);
+  --color-field-background: rgba(56, 27, 10, 0.8);
+  --color-field-background-inset: rgba(15, 8, 3, 0.85);
+  --color-field-border: rgba(255, 213, 171, 0.4);
+  --color-field-border-strong: rgba(255, 226, 195, 0.5);
+  --color-data-series-alpha: #ff9d5c;
+  --color-data-series-beta: #ffe156;
+  --color-data-series-gamma: #6fe4ff;
+  --color-data-series-delta: #f76dff;
+  --color-data-surface: rgba(255, 213, 171, 0.08);
+  --color-data-axis: rgba(255, 226, 195, 0.5);
+  --color-data-gridline: rgba(255, 226, 195, 0.25);
+  --color-data-neutral: rgba(255, 226, 195, 0.78);
+}

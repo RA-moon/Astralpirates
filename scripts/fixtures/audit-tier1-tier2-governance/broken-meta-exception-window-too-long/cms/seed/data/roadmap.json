@@ -1,0 +1,28 @@
+{
+  "tiers": [
+    {
+      "id": "tier1",
+      "items": [
+        {
+          "id": "T1.32",
+          "planId": "fixture-meta-exception-window-too-long",
+          "tier": "tier1",
+          "status": "active",
+          "cloudStatus": "healthy",
+          "referenceLabel": "docs/planning/fixture-meta-exception-window-too-long.md",
+          "referenceUrl": "https://github.com/example/repo/blob/main/docs/planning/fixture-meta-exception-window-too-long.md",
+          "planMetaParityExceptionIntentional": true,
+          "planMetaParityExceptionReason": "Intentional metadata mismatch exception with too-long window should fail.",
+          "planMetaParityExceptionOwner": "platform-dx",
+          "planMetaParityExceptionCreatedAt": "2026-04-01T00:00:00Z",
+          "planMetaParityExceptionExpiresAt": "2026-06-15T00:00:00Z",
+          "planMetaParityExceptionTicket": "https://github.com/example/repo/issues/fixture-meta-exception-window-too-long-meta-exception"
+        }
+      ]
+    },
+    {
+      "id": "tier2",
+      "items": []
+    }
+  ]
+}

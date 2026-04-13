@@ -1,0 +1,12 @@
+{
+  "tiers": [
+    {
+      "id": "tier1",
+      "items": "not-an-array"
+    },
+    {
+      "id": 17,
+      "items": []
+    }
+  ]
+}

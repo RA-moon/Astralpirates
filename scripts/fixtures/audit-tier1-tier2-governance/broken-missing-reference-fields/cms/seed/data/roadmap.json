@@ -1,0 +1,20 @@
+{
+  "tiers": [
+    {
+      "id": "tier1",
+      "items": [
+        {
+          "id": "T1.24",
+          "planId": "fixture-missing-reference-fields",
+          "tier": "tier1",
+          "status": "active",
+          "cloudStatus": "healthy"
+        }
+      ]
+    },
+    {
+      "id": "tier2",
+      "items": []
+    }
+  ]
+}

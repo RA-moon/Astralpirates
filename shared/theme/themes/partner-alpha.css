@@ -1,0 +1,41 @@
+/* Partner Alpha overlay shared with CMS + marketing assets */
+[data-theme='partner-alpha'] {
+  --color-background-base: #010914;
+  --color-background-page: #021024;
+  --color-surface-panel: rgba(22, 70, 120, 0.42);
+  --color-surface-panel-strong: rgba(10, 30, 58, 0.75);
+  --color-surface-dialog: rgba(5, 18, 36, 0.95);
+  --color-surface-overlay: rgba(1, 8, 20, 0.78);
+  --color-surface-overlay-strong: rgba(1, 5, 12, 0.88);
+  --color-border-strong: rgba(96, 224, 255, 0.55);
+  --color-border-panel: rgba(96, 224, 255, 0.35);
+  --color-border-panel-strong: rgba(96, 224, 255, 0.45);
+  --color-border-dialog: rgba(96, 224, 255, 0.4);
+  --color-text-primary: #e6fbff;
+  --color-text-secondary: rgba(230, 251, 255, 0.9);
+  --color-text-muted: rgba(230, 251, 255, 0.75);
+  --color-text-faint: rgba(230, 251, 255, 0.62);
+  --color-accent-primary: #21d4fd;
+  --color-accent-secondary: #b721ff;
+  --color-accent-tertiary: #ffd700;
+  --color-success: #4be4a4;
+  --color-warning: #ffc857;
+  --color-danger: #ff6f91;
+  --color-info: #7bf2ff;
+  --gradient-button-default: linear-gradient(135deg, rgba(33, 212, 253, 0.9), rgba(183, 33, 255, 0.5));
+  --gradient-button-hover: linear-gradient(135deg, rgba(33, 212, 253, 1), rgba(183, 33, 255, 0.75));
+  --color-button-secondary-background: rgba(21, 49, 78, 0.9);
+  --color-button-secondary-border: rgba(96, 224, 255, 0.45);
+  --color-field-background: rgba(9, 28, 46, 0.85);
+  --color-field-background-inset: rgba(2, 10, 24, 0.9);
+  --color-field-border: rgba(96, 224, 255, 0.35);
+  --color-field-border-strong: rgba(149, 242, 255, 0.5);
+  --color-data-series-alpha: #21d4fd;
+  --color-data-series-beta: #b721ff;
+  --color-data-series-gamma: #ffd700;
+  --color-data-series-delta: #4be4a4;
+  --color-data-surface: rgba(16, 46, 86, 0.55);
+  --color-data-axis: rgba(230, 251, 255, 0.5);
+  --color-data-gridline: rgba(230, 251, 255, 0.2);
+  --color-data-neutral: rgba(230, 251, 255, 0.8);
+}

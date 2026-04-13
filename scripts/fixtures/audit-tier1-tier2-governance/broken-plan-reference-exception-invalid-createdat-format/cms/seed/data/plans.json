@@ -1,0 +1,11 @@
+{
+  "plans": [
+    {
+      "id": "fixture-reference-parity-intentional",
+      "path": "docs/planning/fixture-reference-parity-intentional.md",
+      "tier": "tier1",
+      "status": "active",
+      "cloudStatus": "healthy"
+    }
+  ]
+}

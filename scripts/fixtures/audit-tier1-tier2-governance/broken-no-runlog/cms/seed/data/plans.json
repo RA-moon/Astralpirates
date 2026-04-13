@@ -1,0 +1,9 @@
+[
+  {
+    "id": "fixture-no-runlog-plan",
+    "path": "docs/planning/fixture-no-runlog-plan.md",
+    "tier": "tier1",
+    "status": "shipped",
+    "cloudStatus": "healthy"
+  }
+]

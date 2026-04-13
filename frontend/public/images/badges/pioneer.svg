@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Pioneer honor badge</title>
+  <desc id="desc">A stylised compass star inside a teal-gold medallion.</desc>
+  <defs>
+    <radialGradient id="pioneer-glow" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#8ce6ff"/>
+      <stop offset="55%" stop-color="#25b4ff"/>
+      <stop offset="100%" stop-color="#0b375c"/>
+    </radialGradient>
+    <radialGradient id="pioneer-core" cx="50%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#ffe8a3"/>
+      <stop offset="100%" stop-color="#ffb347"/>
+    </radialGradient>
+  </defs>
+  <circle cx="32" cy="32" r="30" fill="url(#pioneer-glow)" stroke="#93f0ff" stroke-width="2" />
+  <circle cx="32" cy="32" r="18" fill="url(#pioneer-core)" stroke="#fff3c7" stroke-width="1.5" />
+  <path d="M32 14l4.2 10.7L47 28l-10.8 4.2L32 44l-4.2-11.8L17 28l10.8-3.3z"
+        fill="#082235" stroke="#fff8dc" stroke-width="1.2" stroke-linejoin="round"/>
+  <circle cx="32" cy="32" r="3.2" fill="#fff" opacity="0.85"/>
+</svg>

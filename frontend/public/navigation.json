@@ -1,0 +1,61 @@
+{
+  "generatedAt": "2026-04-08T19:41:54.299Z",
+  "links": [
+    {
+      "label": "Flight-plans",
+      "href": "/bridge/flight-plans"
+    },
+    {
+      "label": "Bridge",
+      "href": "/bridge"
+    },
+    {
+      "label": "Log-book",
+      "href": "/bridge/logbook"
+    },
+    {
+      "label": "Airlock (home)",
+      "href": "/"
+    },
+    {
+      "label": "About",
+      "href": "/gangway/about"
+    },
+    {
+      "label": "Gangway",
+      "href": "/gangway"
+    },
+    {
+      "label": "Pirates",
+      "href": "/gangway/about/pirates"
+    },
+    {
+      "label": "Legal",
+      "href": "/gangway/legal"
+    },
+    {
+      "label": "Contact",
+      "href": "/gangway/about/contact"
+    },
+    {
+      "label": "Lair",
+      "href": "/gangway/lair"
+    },
+    {
+      "label": "Crew-quarters",
+      "href": "/gangway/crew-quarters"
+    },
+    {
+      "label": "Engr.",
+      "href": "/gangway/engineering"
+    },
+    {
+      "label": "Control",
+      "href": "/gangway/engineering/control"
+    },
+    {
+      "label": "Bay",
+      "href": "/gangway/engineering/bay"
+    }
+  ]
+}

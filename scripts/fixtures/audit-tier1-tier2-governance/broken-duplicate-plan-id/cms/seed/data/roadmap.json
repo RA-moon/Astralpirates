@@ -1,0 +1,38 @@
+{
+  "tiers": [
+    {
+      "id": "tier1",
+      "items": [
+        {
+          "id": "T1.12",
+          "planId": "fixture-duplicate-plan-id",
+          "status": "active",
+          "plan": {
+            "path": "docs/planning/fixture-duplicate-plan-id.md"
+          },
+          "referenceLabel": "docs/planning/fixture-duplicate-plan-id.md",
+          "referenceUrl": "https://github.com/example/repo/blob/main/docs/planning/fixture-duplicate-plan-id.md",
+          "tier": "tier1",
+          "cloudStatus": "healthy"
+        }
+      ]
+    },
+    {
+      "id": "tier2",
+      "items": [
+        {
+          "id": "T2.12",
+          "planId": "fixture-duplicate-plan-id",
+          "status": "active",
+          "plan": {
+            "path": "docs/planning/fixture-duplicate-plan-id.md"
+          },
+          "referenceLabel": "docs/planning/fixture-duplicate-plan-id.md",
+          "referenceUrl": "https://github.com/example/repo/blob/main/docs/planning/fixture-duplicate-plan-id.md",
+          "tier": "tier2",
+          "cloudStatus": "healthy"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "tiers": [
+    {
+      "id": "tier1",
+      "items": [
+        {
+          "id": "T1.35",
+          "planId": "fixture-meta-exception-missing-ticket",
+          "tier": "tier1",
+          "status": "active",
+          "cloudStatus": "healthy",
+          "referenceLabel": "docs/planning/fixture-meta-exception-missing-ticket.md",
+          "referenceUrl": "https://github.com/example/repo/blob/main/docs/planning/fixture-meta-exception-missing-ticket.md",
+          "planMetaParityExceptionIntentional": true,
+          "planMetaParityExceptionReason": "Intentional metadata mismatch exception without ticket should fail.",
+          "planMetaParityExceptionOwner": "platform-dx",
+          "planMetaParityExceptionCreatedAt": "2026-04-01T00:00:00Z",
+          "planMetaParityExceptionExpiresAt": "2026-04-15T00:00:00Z"
+        }
+      ]
+    },
+    {
+      "id": "tier2",
+      "items": []
+    }
+  ]
+}

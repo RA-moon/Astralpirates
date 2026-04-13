@@ -1,0 +1,27 @@
+{
+  "tiers": [
+    {
+      "id": "tier1",
+      "items": [
+        {
+          "id": "T1.36",
+          "planId": "fixture-reference-exception-missing-ticket",
+          "tier": "tier1",
+          "status": "active",
+          "cloudStatus": "healthy",
+          "referenceLabel": "docs/run-logs/fixture-reference-exception-missing-ticket/00-overview.md",
+          "referenceUrl": "https://github.com/example/repo/blob/main/docs/run-logs/fixture-reference-exception-missing-ticket/00-overview.md",
+          "planReferenceParityExceptionIntentional": true,
+          "planReferenceParityExceptionReason": "Intentional reference mismatch exception without ticket should fail.",
+          "planReferenceParityExceptionOwner": "platform-dx",
+          "planReferenceParityExceptionCreatedAt": "2026-04-01T00:00:00Z",
+          "planReferenceParityExceptionExpiresAt": "2026-04-15T00:00:00Z"
+        }
+      ]
+    },
+    {
+      "id": "tier2",
+      "items": []
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "generatedAt": "2026-04-02T00:00:00.000Z",
+  "plans": [
+    {
+      "id": "fixture-schema-extra-plan",
+      "path": "docs/planning/fixture-schema-extra-plan.md",
+      "slug": "fixture-schema-extra-plan",
+      "summary": "Fixture with additive fields",
+      "tier": "tier1",
+      "status": "shipped",
+      "cloudStatus": "healthy"
+    }
+  ],
+  "source": "fixture"
+}

@@ -1,0 +1,11 @@
+{
+  "plans": [
+    {
+      "id": "fixture-plan-meta-mismatch",
+      "path": "docs/planning/fixture-plan-meta-mismatch.md",
+      "tier": "tier1",
+      "status": "shipped",
+      "cloudStatus": "healthy"
+    }
+  ]
+}

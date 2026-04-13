@@ -1,0 +1,11 @@
+{
+  "plans": [
+    {
+      "id": "fixture-reference-exception-window-too-long",
+      "path": "docs/planning/fixture-reference-exception-window-too-long.md",
+      "tier": "tier1",
+      "status": "active",
+      "cloudStatus": "healthy"
+    }
+  ]
+}

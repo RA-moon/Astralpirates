@@ -1,0 +1,22 @@
+{
+  "tiers": [
+    {
+      "id": "tier1",
+      "items": [
+        {
+          "id": "T1.18",
+          "planId": "fixture-plan-meta-mismatch",
+          "tier": "tier1",
+          "status": "active",
+          "cloudStatus": "healthy",
+          "referenceLabel": "docs/planning/fixture-plan-meta-mismatch.md",
+          "referenceUrl": "https://github.com/example/repo/blob/main/docs/planning/fixture-plan-meta-mismatch.md"
+        }
+      ]
+    },
+    {
+      "id": "tier2",
+      "items": []
+    }
+  ]
+}

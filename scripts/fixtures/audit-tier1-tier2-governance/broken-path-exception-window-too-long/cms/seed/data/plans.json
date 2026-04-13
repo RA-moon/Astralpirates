@@ -1,0 +1,11 @@
+{
+  "plans": [
+    {
+      "id": "fixture-path-exception-window-too-long",
+      "path": "docs/legacy/fixture-path-exception-window-too-long.md",
+      "tier": "tier1",
+      "status": "active",
+      "cloudStatus": "healthy"
+    }
+  ]
+}

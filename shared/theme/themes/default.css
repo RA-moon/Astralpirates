@@ -1,0 +1,2 @@
+/* Default theme inherits the tokens.css baseline. The selector remains so downstream apps can override safely. */
+[data-theme='default'] {}

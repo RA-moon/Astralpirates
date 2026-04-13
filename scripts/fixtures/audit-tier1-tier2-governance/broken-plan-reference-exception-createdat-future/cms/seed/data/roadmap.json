@@ -1,0 +1,28 @@
+{
+  "tiers": [
+    {
+      "id": "tier1",
+      "items": [
+        {
+          "id": "T1.22",
+          "planId": "fixture-reference-parity-intentional",
+          "tier": "tier1",
+          "status": "active",
+          "cloudStatus": "healthy",
+          "referenceLabel": "docs/run-logs/fixture-reference-parity-intentional/00-overview.md",
+          "referenceUrl": "https://github.com/example/repo/blob/main/docs/run-logs/fixture-reference-parity-intentional/00-overview.md",
+          "planReferenceParityExceptionIntentional": true,
+          "planReferenceParityExceptionReason": "Intentional fixture mismatch to validate reference parity exception handling.",
+          "planReferenceParityExceptionOwner": "platform-dx",
+          "planReferenceParityExceptionCreatedAt": "2026-04-20T00:00:00Z",
+          "planReferenceParityExceptionExpiresAt": "2026-04-22T00:00:00Z",
+          "planReferenceParityExceptionTicket": "https://github.com/example/repo/issues/fixture-reference-parity-intentional-reference-exception"
+        }
+      ]
+    },
+    {
+      "id": "tier2",
+      "items": []
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "tiers": [
+    {
+      "id": "tier1",
+      "items": [
+        {
+          "id": "T1.31",
+          "planId": "fixture-path-exception-window-too-long",
+          "status": "active",
+          "referenceLabel": "docs/legacy/fixture-path-exception-window-too-long.md",
+          "referenceUrl": "https://github.com/example/repo/blob/main/docs/legacy/fixture-path-exception-window-too-long.md",
+          "planPathCanonicalExceptionIntentional": true,
+          "planPathCanonicalExceptionReason": "Intentional noncanonical path exception with too-long window should fail.",
+          "planPathCanonicalExceptionOwner": "platform-dx",
+          "planPathCanonicalExceptionCreatedAt": "2026-04-01T00:00:00Z",
+          "planPathCanonicalExceptionExpiresAt": "2026-06-15T00:00:00Z",
+          "planPathCanonicalExceptionTicket": "https://github.com/example/repo/issues/fixture-path-exception-window-too-long-path-exception",
+          "tier": "tier1",
+          "cloudStatus": "healthy"
+        }
+      ]
+    },
+    {
+      "id": "tier2",
+      "items": []
+    }
+  ]
+}

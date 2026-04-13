@@ -1,0 +1,11 @@
+{
+  "plans": [
+    {
+      "id": "fixture-plan-meta-intentional",
+      "path": "docs/planning/fixture-plan-meta-intentional.md",
+      "tier": "tier1",
+      "status": "shipped",
+      "cloudStatus": "pending"
+    }
+  ]
+}

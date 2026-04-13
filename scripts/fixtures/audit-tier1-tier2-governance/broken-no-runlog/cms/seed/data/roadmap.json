@@ -1,0 +1,25 @@
+{
+  "tiers": [
+    {
+      "id": "tier1",
+      "items": [
+        {
+          "id": "T1.03",
+          "planId": "fixture-no-runlog-plan",
+          "status": "shipped",
+          "plan": {
+            "path": "docs/planning/fixture-no-runlog-plan.md"
+          },
+          "referenceLabel": "docs/planning/fixture-no-runlog-plan.md",
+          "referenceUrl": "https://github.com/example/repo/blob/main/docs/planning/fixture-no-runlog-plan.md",
+          "tier": "tier1",
+          "cloudStatus": "healthy"
+        }
+      ]
+    },
+    {
+      "id": "tier2",
+      "items": []
+    }
+  ]
+}

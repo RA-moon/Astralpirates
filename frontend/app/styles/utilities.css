@@ -1,0 +1,85 @@
+:root {
+  /* utilities map directly to tokens; no hardcoded values */
+  --util-gap-page: var(--layout-page-gap);
+  --util-gap-section: var(--layout-section-gap);
+  --util-pad-card: var(--layout-card-padding);
+  --util-radius-card: var(--layout-card-radius);
+}
+
+.u-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.u-stack--page {
+  gap: var(--util-gap-page);
+}
+
+.u-stack--section {
+  gap: var(--util-gap-section);
+}
+
+.u-card {
+  padding: var(--util-pad-card);
+  border-radius: var(--util-radius-card);
+}
+
+.u-stack--sm {
+  gap: var(--space-sm);
+}
+
+.u-stack--md {
+  gap: var(--space-md);
+}
+
+.u-stack--lg {
+  gap: var(--space-lg);
+}
+
+.u-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.u-inline--wrap {
+  flex-wrap: wrap;
+}
+
+.u-inline--center {
+  justify-content: center;
+}
+
+.u-grid {
+  display: grid;
+  gap: var(--space-lg);
+}
+
+.u-grid--section {
+  gap: var(--util-gap-section);
+}
+
+.u-grid--page {
+  gap: var(--util-gap-page);
+}
+
+.u-text-caption {
+  font-size: calc(var(--size-base-space-rem) * 0.85);
+  letter-spacing: calc(var(--crew-identity-meta-letter-spacing) * 0.625);
+}
+
+.u-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--util-gap-section);
+}
+
+.u-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.u-border--dashed {
+  border: var(--size-base-layout-px) dashed var(--color-border-weak);
+}

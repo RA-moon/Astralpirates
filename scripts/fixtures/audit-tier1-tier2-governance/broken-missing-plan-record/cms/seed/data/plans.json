@@ -1,0 +1,11 @@
+{
+  "plans": [
+    {
+      "id": "fixture-some-other-plan",
+      "path": "docs/planning/fixture-some-other-plan.md",
+      "tier": "tier1",
+      "status": "active",
+      "cloudStatus": "healthy"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "tiers": [
+    {
+      "id": "tier1",
+      "items": [
+        {
+          "id": "T1.05",
+          "planId": "fixture-unresolved-plan",
+          "status": "shipped",
+          "plan": {
+            "path": "docs/planning/does-not-exist.md"
+          },
+          "referenceLabel": "docs/planning/does-not-exist.md",
+          "referenceUrl": "https://github.com/example/repo/blob/main/docs/planning/does-not-exist.md",
+          "tier": "tier1",
+          "cloudStatus": "healthy"
+        }
+      ]
+    },
+    {
+      "id": "tier2",
+      "items": []
+    }
+  ]
+}

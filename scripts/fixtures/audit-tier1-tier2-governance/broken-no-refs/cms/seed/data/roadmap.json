@@ -1,0 +1,25 @@
+{
+  "tiers": [
+    {
+      "id": "tier1",
+      "items": [
+        {
+          "id": "T1.04",
+          "planId": "fixture-no-refs-plan",
+          "status": "active",
+          "plan": {
+            "path": "docs/planning/fixture-no-refs-plan.md"
+          },
+          "referenceLabel": "docs/planning/fixture-no-refs-plan.md",
+          "referenceUrl": "https://github.com/example/repo/blob/main/docs/planning/fixture-no-refs-plan.md",
+          "tier": "tier1",
+          "cloudStatus": "healthy"
+        }
+      ]
+    },
+    {
+      "id": "tier2",
+      "items": []
+    }
+  ]
+}

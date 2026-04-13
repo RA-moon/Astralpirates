@@ -1,0 +1,16 @@
+[
+  {
+    "id": "fixture-clean-plan",
+    "path": "docs/planning/fixture-clean-plan.md",
+    "tier": "tier1",
+    "status": "shipped",
+    "cloudStatus": "healthy"
+  },
+  {
+    "id": "fixture-clean-plan-duplicate-path",
+    "path": "docs/planning/fixture-clean-plan.md",
+    "tier": "tier1",
+    "status": "active",
+    "cloudStatus": "healthy"
+  }
+]

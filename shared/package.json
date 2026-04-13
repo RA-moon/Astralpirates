@@ -1,0 +1,144 @@
+{
+  "name": "@astralpirates/shared",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    },
+    "./accessPolicy": {
+      "types": "./dist/accessPolicy.d.ts",
+      "import": "./dist/accessPolicy.mjs",
+      "default": "./dist/accessPolicy.mjs"
+    },
+    "./crewRoles": {
+      "types": "./dist/crewRoles.d.ts",
+      "import": "./dist/crewRoles.mjs",
+      "default": "./dist/crewRoles.mjs"
+    },
+    "./adminMode": {
+      "types": "./dist/adminMode.d.ts",
+      "import": "./dist/adminMode.mjs",
+      "default": "./dist/adminMode.mjs"
+    },
+    "./authorization": {
+      "types": "./dist/authorization.d.ts",
+      "import": "./dist/authorization.mjs",
+      "default": "./dist/authorization.mjs"
+    },
+    "./permissions": {
+      "types": "./dist/permissions.d.ts",
+      "import": "./dist/permissions.mjs",
+      "default": "./dist/permissions.mjs"
+    },
+    "./api-contracts": {
+      "types": "./dist/api-contracts.d.ts",
+      "import": "./dist/api-contracts.mjs",
+      "default": "./dist/api-contracts.mjs"
+    },
+    "./honorBadges": {
+      "types": "./dist/honorBadges.d.ts",
+      "import": "./dist/honorBadges.mjs",
+      "default": "./dist/honorBadges.mjs"
+    },
+    "./pageBlocks": {
+      "types": "./dist/pageBlocks.d.ts",
+      "import": "./dist/pageBlocks.mjs",
+      "default": "./dist/pageBlocks.mjs"
+    },
+    "./logs": {
+      "types": "./dist/logs.d.ts",
+      "import": "./dist/logs.mjs",
+      "default": "./dist/logs.mjs"
+    },
+    "./env": {
+      "types": "./dist/env.d.ts",
+      "import": "./dist/env.mjs",
+      "default": "./dist/env.mjs"
+    },
+    "./taskStates": {
+      "types": "./dist/taskStates.d.ts",
+      "import": "./dist/taskStates.mjs",
+      "default": "./dist/taskStates.mjs"
+    },
+    "./navigationNodes": {
+      "types": "./dist/navigationNodes.d.ts",
+      "import": "./dist/navigationNodes.mjs",
+      "default": "./dist/navigationNodes.mjs"
+    },
+    "./mediaUrls": {
+      "types": "./dist/mediaUrls.d.ts",
+      "import": "./dist/mediaUrls.mjs",
+      "default": "./dist/mediaUrls.mjs"
+    },
+    "./avatarMedia": {
+      "types": "./dist/avatarMedia.d.ts",
+      "import": "./dist/avatarMedia.mjs",
+      "default": "./dist/avatarMedia.mjs"
+    },
+    "./flightPlanLifecycle": {
+      "types": "./dist/flightPlanLifecycle.d.ts",
+      "import": "./dist/flightPlanLifecycle.mjs",
+      "default": "./dist/flightPlanLifecycle.mjs"
+    },
+    "./galleryMedia": {
+      "types": "./dist/galleryMedia.d.ts",
+      "import": "./dist/galleryMedia.mjs",
+      "default": "./dist/galleryMedia.mjs"
+    },
+    "./plans": {
+      "types": "./dist/plans.d.ts",
+      "import": "./dist/plans.mjs",
+      "default": "./dist/plans.mjs"
+    },
+    "./roadmap": {
+      "types": "./dist/roadmap.d.ts",
+      "import": "./dist/roadmap.mjs",
+      "default": "./dist/roadmap.mjs"
+    },
+    "./theme/tokens": {
+      "types": "./dist/theme/tokens.d.ts",
+      "import": "./dist/theme/tokens.mjs",
+      "default": "./dist/theme/tokens.mjs"
+    },
+    "./theme/runtime": {
+      "types": "./dist/theme/runtime-tokens.d.ts",
+      "import": "./dist/theme/runtime-tokens.mjs",
+      "default": "./dist/theme/runtime-tokens.mjs"
+    },
+    "./theme/tokens.css": {
+      "default": "./theme/tokens.css"
+    },
+    "./theme/themes/*": {
+      "default": "./theme/themes/*"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "theme",
+    "package.json"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "lint": "tsc --noEmit -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.build.json",
+    "test": "tsx --test",
+    "build": "tsup --config tsup.config.ts",
+    "prepare": "pnpm run build"
+  },
+  "dependencies": {
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.3",
+    "tsx": "^4.21.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.9.3"
+  }
+}

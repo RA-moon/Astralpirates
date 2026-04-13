@@ -1,0 +1,25 @@
+{
+  "tiers": [
+    {
+      "id": "tier1",
+      "items": [
+        {
+          "id": "T1.27",
+          "planId": "fixture-path-exception-missing-metadata",
+          "status": "active",
+          "referenceLabel": "docs/legacy/fixture-path-exception-missing-metadata.md",
+          "referenceUrl": "https://github.com/example/repo/blob/main/docs/legacy/fixture-path-exception-missing-metadata.md",
+          "planPathCanonicalExceptionIntentional": true,
+          "planPathCanonicalExceptionReason": "Intentional noncanonical path exception without metadata should fail.",
+          "planPathCanonicalExceptionTicket": "https://github.com/example/repo/issues/fixture-path-exception-missing-metadata-path-exception",
+          "tier": "tier1",
+          "cloudStatus": "healthy"
+        }
+      ]
+    },
+    {
+      "id": "tier2",
+      "items": []
+    }
+  ]
+}

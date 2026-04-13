@@ -1,0 +1,10 @@
+injectWorkspacePackages: true
+
+packages:
+  - frontend
+  - cms
+  - shared
+  - eslint-plugin-astral-design
+
+ignoredBuiltDependencies:
+  - msgpackr-extract

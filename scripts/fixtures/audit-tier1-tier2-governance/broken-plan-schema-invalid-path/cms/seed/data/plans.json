@@ -1,0 +1,9 @@
+[
+  {
+    "id": "fixture-clean-plan",
+    "path": "docs/run-logs/fixture-clean/00-overview.md",
+    "tier": "tier1",
+    "status": "shipped",
+    "cloudStatus": "healthy"
+  }
+]
