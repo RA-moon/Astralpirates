@@ -20,6 +20,7 @@ __pycache__/
 *.log
 deploy-logs/
 $outfile
+/=
 
 # Generated docs and tooling state (local-only)
 docs/planning/plans-export/
