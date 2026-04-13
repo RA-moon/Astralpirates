@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { authenticateRequest } from '@/app/api/_lib/auth';
 import { corsEmpty, corsJson } from '@/app/api/_lib/cors';
 import {
+  hasAdminEditOverrideForUser,
   inviteMember,
   listMembershipsForFlightPlan,
   loadMembershipWithOwnerFallback,
@@ -103,6 +104,11 @@ export async function GET(
 
   const ownerId = normaliseId((flightPlanDoc as any)?.owner);
   const viewer = auth.user;
+  const hasAdminEditOverride = hasAdminEditOverrideForUser({
+    userId: viewer?.id ?? null,
+    websiteRole: viewer?.role ?? null,
+    adminMode: auth.adminMode,
+  });
   const viewerMembership =
     viewer && ownerId != null
       ? await loadMembershipWithOwnerFallback({
@@ -112,7 +118,8 @@ export async function GET(
         ownerIdHint: ownerId ?? undefined,
       })
       : null;
-  const viewerHasCrewAccess = viewerMembership ? membershipIsAcceptedCrew(viewerMembership) : false;
+  const viewerHasCrewAccess =
+    hasAdminEditOverride || (viewerMembership ? membershipIsAcceptedCrew(viewerMembership) : false);
   const viewerIsAcceptedPassenger =
     viewerMembership?.status === 'accepted' && viewerMembership?.role === 'guest';
   const viewerIsContributor = publicContributions && Boolean(viewer) && !viewerHasCrewAccess && !viewerIsAcceptedPassenger;
@@ -244,11 +251,13 @@ export async function POST(
     flightPlanId,
     userId: auth.user.id,
     ownerIdHint: ownerId ?? undefined,
+    websiteRole: auth.user.role,
+    adminMode: auth.adminMode,
   });
   if (!ownerMayInvite) {
     return corsJson(
       req,
-      { error: 'Only the captain can invite new collaborators.' },
+      { error: 'Only the captain can invite new collaborators unless captain admin edit mode is enabled.' },
       { status: 403 },
       METHODS,
     );

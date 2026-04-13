@@ -79,6 +79,8 @@ describe('POST /api/flight-plans/:slug/members', () => {
       flightPlanId: 10,
       userId: authContext.user.id,
       ownerIdHint: 99,
+      websiteRole: authContext.user.role,
+      adminMode: undefined,
     });
   });
 
@@ -114,6 +116,84 @@ describe('POST /api/flight-plans/:slug/members', () => {
       inviterId: authContext.user.id,
       targetUser: expect.objectContaining({ profileSlug: 'helmsman' }),
     });
+  });
+
+  it('forwards admin-mode context into ownerCanInvite for captain override paths', async () => {
+    const authContext = {
+      ...buildAuthContext(),
+      adminMode: {
+        adminViewEnabled: true,
+        adminEditEnabled: true,
+        eligibility: {
+          canUseAdminView: true,
+          canUseAdminEdit: true,
+        },
+      },
+    };
+    mockedAuthenticateRequest.mockResolvedValue(authContext as any);
+    mockedResolveFlightPlanBySlug.mockResolvedValue({ id: 23, owner: { id: 5 } } as any);
+    mockedOwnerCanInvite.mockResolvedValue(true);
+    authContext.payload.find.mockResolvedValue({
+      docs: [{ id: 9, profileSlug: 'navigator', callSign: 'Navigator', role: 'seamen' }],
+    });
+
+    const membership: FlightPlanMembershipRecord = {
+      id: 199,
+      flightPlanId: 23,
+      userId: 9,
+      role: 'guest',
+      status: 'pending',
+      invitedById: 1,
+      invitedAt: '2025-01-01T00:00:00.000Z',
+      respondedAt: null,
+    };
+    mockedInviteMember.mockResolvedValue(membership);
+
+    const response = await POST(makeRequest({ slug: 'navigator' }), { params: { slug: 'mission' } });
+
+    expect(response.status).toBe(201);
+    expect(mockedOwnerCanInvite).toHaveBeenCalledWith({
+      payload: authContext.payload,
+      flightPlanId: 23,
+      userId: authContext.user.id,
+      ownerIdHint: 5,
+      websiteRole: authContext.user.role,
+      adminMode: authContext.adminMode,
+    });
+  });
+
+  it('keeps denying non-captains with spoofed admin toggles for invites', async () => {
+    const authContext = {
+      ...buildAuthContext(),
+      user: { id: 88, profileSlug: 'deckhand', role: 'seamen' },
+      adminMode: {
+        adminViewEnabled: true,
+        adminEditEnabled: true,
+        eligibility: {
+          canUseAdminView: false,
+          canUseAdminEdit: false,
+        },
+      },
+    };
+    mockedAuthenticateRequest.mockResolvedValue(authContext as any);
+    mockedResolveFlightPlanBySlug.mockResolvedValue({ id: 23, owner: { id: 5 } } as any);
+    mockedOwnerCanInvite.mockResolvedValue(false);
+
+    const response = await POST(makeRequest({ slug: 'navigator' }), { params: { slug: 'mission' } });
+    const body = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(body.error).toMatch(/only the captain/i);
+    expect(mockedOwnerCanInvite).toHaveBeenCalledWith(
+      expect.objectContaining({
+        websiteRole: 'seamen',
+        adminMode: expect.objectContaining({
+          adminViewEnabled: true,
+          adminEditEnabled: true,
+        }),
+      }),
+    );
+    expect(mockedInviteMember).not.toHaveBeenCalled();
   });
 
   it('still restricts invites to captains even when the flag is enabled', async () => {
@@ -337,6 +417,91 @@ describe('GET /api/flight-plans/:slug/members', () => {
     const body = await response.json();
     expect(body.memberships).toHaveLength(1);
     expect(body.memberships[0].id).toBe(91);
+  });
+
+  it('allows captain admin-edit override to load private rosters without membership', async () => {
+    const payload = {
+      find: vi.fn().mockResolvedValue({
+        docs: [{ id: 7, callSign: 'Scout', profileSlug: 'scout', role: 'seaman' }],
+      }),
+      logger: {
+        error: vi.fn(),
+      },
+    };
+    const authContext = {
+      payload,
+      user: { id: 2, profileSlug: 'captain', role: 'captain' },
+      adminMode: {
+        adminViewEnabled: true,
+        adminEditEnabled: true,
+        eligibility: {
+          canUseAdminView: true,
+          canUseAdminEdit: true,
+        },
+      },
+    };
+    mockedAuthenticateRequest.mockResolvedValue(authContext as any);
+    mockedResolveFlightPlanBySlug.mockResolvedValue({
+      id: 33,
+      owner: { id: 5 },
+      isPublic: false,
+    } as any);
+    mockedLoadMembershipWithOwnerFallback.mockResolvedValue(null);
+    mockedListMembershipsForFlightPlan.mockResolvedValue([
+      {
+        id: 90,
+        flightPlanId: 33,
+        userId: 7,
+        role: 'guest',
+        status: 'accepted',
+        invitedById: null,
+        invitedAt: '2025-01-03T00:00:00.000Z',
+        respondedAt: '2025-01-04T00:00:00.000Z',
+      },
+    ]);
+
+    const response = await GET(makeGetRequest(), { params: { slug: 'voyage' } });
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.memberships).toHaveLength(1);
+    expect(body.memberships[0].id).toBe(90);
+    expect(body.memberships[0].user?.id).toBe(7);
+  });
+
+  it('keeps denying non-captains with spoofed admin toggles on private roster reads', async () => {
+    const payload = {
+      find: vi.fn(),
+      logger: {
+        error: vi.fn(),
+      },
+    };
+    const authContext = {
+      payload,
+      user: { id: 88, profileSlug: 'deckhand', role: 'seamen' },
+      adminMode: {
+        adminViewEnabled: true,
+        adminEditEnabled: true,
+        eligibility: {
+          canUseAdminView: false,
+          canUseAdminEdit: false,
+        },
+      },
+    };
+    mockedAuthenticateRequest.mockResolvedValue(authContext as any);
+    mockedResolveFlightPlanBySlug.mockResolvedValue({
+      id: 33,
+      owner: { id: 5 },
+      isPublic: false,
+      publicContributions: false,
+    } as any);
+    mockedLoadMembershipWithOwnerFallback.mockResolvedValue(null);
+
+    const response = await GET(makeGetRequest(), { params: { slug: 'voyage' } });
+    const body = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(body.error).toMatch(/crew roster is limited/i);
+    expect(mockedListMembershipsForFlightPlan).not.toHaveBeenCalled();
   });
 
   it('returns full roster data for captains on public missions', async () => {

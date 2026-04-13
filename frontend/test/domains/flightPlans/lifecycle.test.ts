@@ -4,6 +4,8 @@ import {
   canEditFlightPlanMission,
   canDeleteFlightPlanForViewer,
   canManageFlightPlanLifecycleForViewer,
+  hasFlightPlanAdminEditAccess,
+  hasFlightPlanAdminReadAccess,
   getFlightPlanBucketLabel,
   getFlightPlanStatusLabel,
   resolveFlightPlanLifecycleBucket,
@@ -87,7 +89,7 @@ describe('flightPlans lifecycle helpers', () => {
         viewerIsContributor: false,
         status: 'failure',
       }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('derives lifecycle/delete permissions from shared capability evaluator', () => {
@@ -120,6 +122,71 @@ describe('flightPlans lifecycle helpers', () => {
         ownerId: 5,
         viewerUserId: 6,
         viewerRole: 'sailing-master',
+      }),
+    ).toBe(false);
+
+    expect(
+      canManageFlightPlanLifecycleForViewer({
+        ownerId: 5,
+        viewerUserId: 6,
+        viewerRole: 'captain',
+        adminViewEnabled: true,
+        adminEditEnabled: true,
+      }),
+    ).toBe(true);
+
+    expect(
+      canDeleteFlightPlanForViewer({
+        ownerId: 5,
+        viewerUserId: 6,
+        viewerRole: 'captain',
+        adminViewEnabled: true,
+        adminEditEnabled: true,
+      }),
+    ).toBe(true);
+  });
+
+  it('derives admin read/edit capability lanes from role + toggle dependencies', () => {
+    expect(
+      hasFlightPlanAdminReadAccess({
+        viewerUserId: 10,
+        viewerRole: 'quartermaster',
+        adminViewEnabled: true,
+      }),
+    ).toBe(true);
+
+    expect(
+      hasFlightPlanAdminReadAccess({
+        viewerUserId: 10,
+        viewerRole: 'quartermaster',
+        adminViewEnabled: false,
+      }),
+    ).toBe(false);
+
+    expect(
+      hasFlightPlanAdminEditAccess({
+        viewerUserId: 11,
+        viewerRole: 'captain',
+        adminViewEnabled: true,
+        adminEditEnabled: true,
+      }),
+    ).toBe(true);
+
+    expect(
+      hasFlightPlanAdminEditAccess({
+        viewerUserId: 11,
+        viewerRole: 'captain',
+        adminViewEnabled: true,
+        adminEditEnabled: false,
+      }),
+    ).toBe(false);
+
+    expect(
+      hasFlightPlanAdminEditAccess({
+        viewerUserId: 11,
+        viewerRole: 'quartermaster',
+        adminViewEnabled: true,
+        adminEditEnabled: true,
       }),
     ).toBe(false);
   });

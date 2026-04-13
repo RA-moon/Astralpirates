@@ -2,6 +2,7 @@ import type { Payload } from 'payload';
 
 import type { AuthContext } from '../auth';
 import {
+  hasAdminEditOverrideForUser,
   loadMembershipWithOwnerFallback,
   membershipIsAcceptedCrew,
   membershipIsAcceptedPassenger,
@@ -79,7 +80,12 @@ const resolveFlightPlanTaskPolicy = async ({
       })
     : null;
 
-  const viewerIsCrew = membershipIsAcceptedCrew(viewerMembership);
+  const hasAdminEditOverride = hasAdminEditOverrideForUser({
+    userId: auth.user?.id ?? null,
+    websiteRole: auth.user?.role ?? null,
+    adminMode: auth.adminMode,
+  });
+  const viewerIsCrew = membershipIsAcceptedCrew(viewerMembership) || hasAdminEditOverride;
   const viewerIsPassenger = membershipIsAcceptedPassenger(viewerMembership);
 
   if (task.isCrewOnly && !viewerIsCrew) {
@@ -101,9 +107,10 @@ const resolveFlightPlanTaskPolicy = async ({
     };
   }
 
-  const canComment = viewerIsCrew || (viewerIsPassenger && planMeta.passengersCanCommentOnTasks);
+  const canComment =
+    hasAdminEditOverride || viewerIsCrew || (viewerIsPassenger && planMeta.passengersCanCommentOnTasks);
   const canVote = canComment;
-  const canModerate = viewerIsCrew;
+  const canModerate = hasAdminEditOverride || viewerIsCrew;
 
   return {
     ok: true,

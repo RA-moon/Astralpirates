@@ -194,4 +194,64 @@ describe('resolveCommentPolicy', () => {
       expect(result.status).toBe(403);
     }
   });
+
+  it('allows captain admin-edit override to moderate without accepted membership', async () => {
+    mockedLoadMembership.mockResolvedValueOnce(null);
+    mockedIsCrew.mockReturnValueOnce(false);
+    mockedIsPassenger.mockReturnValueOnce(false);
+
+    const result = await resolveCommentPolicy({
+      auth: {
+        payload: payload as any,
+        user: { id: 99, role: 'captain' } as any,
+        adminMode: {
+          adminViewEnabled: true,
+          adminEditEnabled: true,
+          eligibility: {
+            canUseAdminView: true,
+            canUseAdminEdit: true,
+          },
+        },
+      } as any,
+      resourceType: 'flight-plan-task',
+      resourceId: 11,
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.policy.canView).toBe(true);
+      expect(result.policy.canComment).toBe(true);
+      expect(result.policy.canVote).toBe(true);
+      expect(result.policy.canModerate).toBe(true);
+    }
+  });
+
+  it('does not allow spoofed admin toggles for non-captain moderation', async () => {
+    mockedLoadMembership.mockResolvedValueOnce(null);
+    mockedIsCrew.mockReturnValueOnce(false);
+    mockedIsPassenger.mockReturnValueOnce(false);
+
+    const result = await resolveCommentPolicy({
+      auth: {
+        payload: payload as any,
+        user: { id: 199, role: 'seamen' } as any,
+        adminMode: {
+          adminViewEnabled: true,
+          adminEditEnabled: true,
+          eligibility: {
+            canUseAdminView: false,
+            canUseAdminEdit: false,
+          },
+        },
+      } as any,
+      resourceType: 'flight-plan-task',
+      resourceId: 11,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.status).toBe(403);
+      expect(result.error).toBe('Crew access required.');
+    }
+  });
 });

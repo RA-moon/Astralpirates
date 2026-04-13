@@ -152,6 +152,19 @@ export async function GET(req: NextRequest) {
 
   const auth = await authenticateRequest(req);
   const { payload, user } = auth;
+  const userId = normaliseId(user?.id);
+  const userWebsiteRole = normalizeCrewRole(user?.role);
+  const hasAdminReadOverride = can('adminReadAllContent', {
+    actor: {
+      userId,
+      isAuthenticated: userId != null,
+      websiteRole: userWebsiteRole,
+    },
+    toggles: {
+      adminViewEnabled: auth.adminMode?.adminViewEnabled ?? false,
+      adminEditEnabled: auth.adminMode?.adminEditEnabled ?? false,
+    },
+  });
 
   let viewerPlanIdSet: Set<number> | null = null;
   const viewerMembershipByPlan = new Map<number, FlightPlanMembershipRecord>();
@@ -266,40 +279,42 @@ export async function GET(req: NextRequest) {
   try {
     const whereFilters: Record<string, unknown>[] = [];
 
-    const visibilityFilters: Record<string, unknown>[] = [
-      {
-        isPublic: {
-          equals: true,
+    if (!hasAdminReadOverride) {
+      const visibilityFilters: Record<string, unknown>[] = [
+        {
+          isPublic: {
+            equals: true,
+          },
         },
-      },
-      {
-        visibility: {
-          equals: 'public',
+        {
+          visibility: {
+            equals: 'public',
+          },
         },
-      },
-    ];
-    if (viewerPlanIdSet?.size) {
-      visibilityFilters.push({
-        id: {
-          in: Array.from(viewerPlanIdSet),
-        },
-      });
+      ];
+      if (viewerPlanIdSet?.size) {
+        visibilityFilters.push({
+          id: {
+            in: Array.from(viewerPlanIdSet),
+          },
+        });
+      }
+      if (user) {
+        visibilityFilters.push({
+          publicContributions: {
+            equals: true,
+          },
+        });
+        visibilityFilters.push({
+          owner: {
+            equals: user.id,
+          },
+        });
+      }
+      whereFilters.push(
+        visibilityFilters.length === 1 ? visibilityFilters[0] : { or: visibilityFilters },
+      );
     }
-    if (user) {
-      visibilityFilters.push({
-        publicContributions: {
-          equals: true,
-        },
-      });
-      visibilityFilters.push({
-        owner: {
-          equals: user.id,
-        },
-      });
-    }
-    whereFilters.push(
-      visibilityFilters.length === 1 ? visibilityFilters[0] : { or: visibilityFilters },
-    );
 
     if (planIdFilter != null) {
       whereFilters.push({

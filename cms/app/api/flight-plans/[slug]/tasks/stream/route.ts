@@ -4,6 +4,7 @@ import type { NextRequest } from 'next/server';
 import { authenticateRequest } from '@/app/api/_lib/auth';
 import { corsJson } from '@/app/api/_lib/cors';
 import {
+  hasAdminEditOverrideForUser,
   loadMembershipWithOwnerFallback,
   normaliseId,
   resolveFlightPlanBySlug,
@@ -102,9 +103,15 @@ export async function GET(
       })
     : null;
   const viewerHasMembership = viewerMembership && viewerMembership.status === 'accepted';
+  const hasAdminEditOverride = hasAdminEditOverrideForUser({
+    userId: auth.user?.id ?? null,
+    websiteRole: auth.user?.role ?? null,
+    adminMode: auth.adminMode,
+  });
   const viewerIsCrew =
-    viewerHasMembership &&
-    (viewerMembership.role === 'owner' || viewerMembership.role === 'crew');
+    hasAdminEditOverride ||
+    (viewerHasMembership &&
+      (viewerMembership.role === 'owner' || viewerMembership.role === 'crew'));
   const viewerCanStream = canUserReadFlightPlan({
     user: auth.user,
     ownerId,

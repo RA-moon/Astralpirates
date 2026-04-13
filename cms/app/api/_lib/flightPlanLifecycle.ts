@@ -1,6 +1,7 @@
 import type { Payload, PayloadRequest } from 'payload';
 
 import type { User } from '@/payload-types';
+import type { EffectiveAdminMode } from '@astralpirates/shared/adminMode';
 import { can } from '@astralpirates/shared/authorization';
 import {
   FLIGHT_PLAN_LIFECYCLE_ACTIVE_STATUSES,
@@ -52,9 +53,11 @@ export const isTerminalFlightPlanStatus = (status: unknown): boolean => {
 export const canManageFlightPlanLifecycle = ({
   ownerId,
   user,
+  adminMode,
 }: {
   ownerId: number | null;
   user: { id?: unknown; role?: unknown } | null | undefined;
+  adminMode?: EffectiveAdminMode | null;
 }): boolean => {
   const userId = normaliseId(user?.id);
   return can('manageFlightPlanLifecycle', {
@@ -66,15 +69,21 @@ export const canManageFlightPlanLifecycle = ({
     owner: {
       userId: ownerId,
     },
+    toggles: {
+      adminViewEnabled: adminMode?.adminViewEnabled ?? false,
+      adminEditEnabled: adminMode?.adminEditEnabled ?? false,
+    },
   });
 };
 
 export const canHardDeleteFlightPlan = ({
   ownerId,
   user,
+  adminMode,
 }: {
   ownerId: number | null;
   user: { id?: unknown; role?: unknown } | null | undefined;
+  adminMode?: EffectiveAdminMode | null;
 }): boolean => {
   const userId = normaliseId(user?.id);
   return can('deleteFlightPlan', {
@@ -85,6 +94,10 @@ export const canHardDeleteFlightPlan = ({
     },
     owner: {
       userId: ownerId,
+    },
+    toggles: {
+      adminViewEnabled: adminMode?.adminViewEnabled ?? false,
+      adminEditEnabled: adminMode?.adminEditEnabled ?? false,
     },
   });
 };

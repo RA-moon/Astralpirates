@@ -250,6 +250,162 @@ describe('GET /api/flight-plans', () => {
     );
   });
 
+  it('includes private missions for captain admin-read/edit override without memberships', async () => {
+    const payload = {
+      find: vi.fn(),
+      logger: {
+        warn: vi.fn(),
+        error: vi.fn(),
+      },
+    };
+
+    mockedAuthenticateRequest.mockResolvedValue({
+      payload,
+      user: { id: 88, profileSlug: 'captain', role: 'captain' },
+      adminMode: {
+        adminViewEnabled: true,
+        adminEditEnabled: true,
+        eligibility: {
+          canUseAdminView: true,
+          canUseAdminEdit: true,
+        },
+      },
+    } as any);
+    mockedLoadMembershipsForUser.mockResolvedValueOnce([]);
+
+    payload.find
+      // flight plan query
+      .mockResolvedValueOnce({
+        docs: [
+          {
+            id: 444,
+            slug: 'black-ops',
+            title: 'Black Ops',
+            owner: { id: 9 },
+            path: 'bridge/flight-plans/black-ops',
+            summary: null,
+            location: null,
+            dateCode: null,
+            displayDate: 'January 7, 2025',
+            eventDate: '2025-01-07T00:00:00.000Z',
+            createdAt: '2025-01-01T00:00:00.000Z',
+            updatedAt: '2025-01-02T00:00:00.000Z',
+            crewCanPromotePassengers: false,
+            isPublic: false,
+            visibility: 'captain',
+            body: [
+              {
+                type: 'paragraph',
+                children: [{ text: 'Classified mission' }],
+              },
+            ],
+          },
+        ],
+      })
+      // resolveOwners lookup
+      .mockResolvedValueOnce({
+        docs: [{ id: 9, profileSlug: 'owner', callSign: 'Owner', role: 'captain' }],
+      });
+
+    const response = await GET(makeRequest({}));
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.plans).toHaveLength(1);
+    expect(body.plans[0].slug).toBe('black-ops');
+    expect(body.plans[0].isPublic).toBe(false);
+
+    const planQuery = payload.find.mock.calls[0]?.[0];
+    expect(planQuery?.where).toBeUndefined();
+  });
+
+  it('does not elevate private mission reads for non-captains with spoofed admin toggles', async () => {
+    const payload = {
+      find: vi.fn(),
+      logger: {
+        warn: vi.fn(),
+        error: vi.fn(),
+      },
+    };
+
+    mockedAuthenticateRequest.mockResolvedValue({
+      payload,
+      user: { id: 88, profileSlug: 'deckhand', role: 'seamen' },
+      adminMode: {
+        adminViewEnabled: true,
+        adminEditEnabled: true,
+        eligibility: {
+          canUseAdminView: false,
+          canUseAdminEdit: false,
+        },
+      },
+    } as any);
+    mockedLoadMembershipsForUser.mockResolvedValueOnce([]);
+
+    payload.find
+      .mockResolvedValueOnce({
+        docs: [
+          {
+            id: 501,
+            slug: 'public-voyage',
+            title: 'Public Voyage',
+            owner: { id: 9 },
+            path: 'bridge/flight-plans/public-voyage',
+            summary: null,
+            location: null,
+            dateCode: null,
+            displayDate: 'January 8, 2025',
+            eventDate: '2025-01-08T00:00:00.000Z',
+            createdAt: '2025-01-01T00:00:00.000Z',
+            updatedAt: '2025-01-02T00:00:00.000Z',
+            crewCanPromotePassengers: false,
+            isPublic: true,
+            body: [
+              {
+                type: 'paragraph',
+                children: [{ text: 'Visible mission' }],
+              },
+            ],
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        docs: [{ id: 9, profileSlug: 'owner', callSign: 'Owner', role: 'captain' }],
+      });
+
+    const response = await GET(makeRequest({}));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.plans).toHaveLength(1);
+    expect(body.plans[0].slug).toBe('public-voyage');
+
+    const planQuery = payload.find.mock.calls[0]?.[0];
+    expect(planQuery?.where).toMatchObject({
+      or: expect.arrayContaining([
+        {
+          isPublic: {
+            equals: true,
+          },
+        },
+        {
+          visibility: {
+            equals: 'public',
+          },
+        },
+        {
+          publicContributions: {
+            equals: true,
+          },
+        },
+        {
+          owner: {
+            equals: 88,
+          },
+        },
+      ]),
+    });
+  });
+
   it('applies category filters when provided', async () => {
     const payload = {
       find: vi.fn(),

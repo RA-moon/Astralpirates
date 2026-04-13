@@ -61,7 +61,11 @@ export async function POST(
     }
 
     const ownerId = normaliseId(plan.owner);
-    const lifecycleAllowed = canManageFlightPlanLifecycle({ ownerId, user: auth.user });
+    const lifecycleAllowed = canManageFlightPlanLifecycle({
+      ownerId,
+      user: auth.user,
+      adminMode: auth.adminMode,
+    });
     recordAuthorizationDecision({
       payload: auth.payload,
       capability: 'manageFlightPlanLifecycle',

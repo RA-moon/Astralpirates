@@ -14,7 +14,11 @@ import {
   type CrewSummary,
 } from '../_lib/crew';
 import { ensureUniqueSlug } from '../_lib/slugs';
-import { loadMembership } from '../_lib/flightPlanMembers';
+import {
+  ensureCrewMembership,
+  hasAdminEditOverrideForUser,
+  loadMembership,
+} from '../_lib/flightPlanMembers';
 import { parseDateInput, parseLimit, sanitizeString } from '../_lib/requestParsing';
 import { touchUserActivity } from '../_lib/userActivity';
 import { formatLogTitle } from '@/src/utils/logTitles';
@@ -279,7 +283,24 @@ export async function POST(req: NextRequest) {
   const rawFlightPlanValue = payloadBody?.flightPlanId ?? payloadBody?.flightPlan ?? null;
   const flightPlanId = normalizeFlightPlanId(rawFlightPlanValue);
   if (flightPlanId != null) {
-    const membership = await loadMembership(auth.payload, flightPlanId, auth.user.id);
+    let membership = await loadMembership(auth.payload, flightPlanId, auth.user.id);
+    if (
+      (!membership ||
+        membership.status !== 'accepted' ||
+        (membership.role !== 'owner' && membership.role !== 'crew')) &&
+      hasAdminEditOverrideForUser({
+        userId: auth.user.id,
+        websiteRole: auth.user.role,
+        adminMode: auth.adminMode,
+      })
+    ) {
+      membership = await ensureCrewMembership({
+        payload: auth.payload,
+        flightPlanId,
+        userId: auth.user.id,
+        inviterId: auth.user.id,
+      });
+    }
     if (
       !membership ||
       membership.status !== 'accepted' ||

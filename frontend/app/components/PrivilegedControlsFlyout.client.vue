@@ -53,6 +53,10 @@
         </p>
       </template>
 
+      <p v-if="showCaptainPageEditHint" class="privileged-controls-flyout__copy">
+        Enable admin edit to unlock static-page editing in god mode.
+      </p>
+
       <UiButton
         v-if="showPageEditControl"
         type="button"
@@ -113,11 +117,29 @@ const showAdminEditControl = computed(() => {
   return adminMode.canUseAdminEdit;
 });
 
+const currentUserRole = computed(() => {
+  const role = session.currentUser?.role;
+  if (typeof role !== 'string') return null;
+  const trimmed = role.trim().toLowerCase();
+  return trimmed.length > 0 ? trimmed : null;
+});
+
+const captainPageEditRequiresAdminEdit = computed(() => currentUserRole.value === 'captain');
+
 const showPageEditControl = computed(() => {
   if (!hydrated.value) return false;
   if (!permissions.isReady.value) return false;
   if (!permissions.canEdit.value) return false;
+  if (captainPageEditRequiresAdminEdit.value && !adminMode.adminEditEnabled) return false;
   return Boolean(props.pageData);
+});
+
+const showCaptainPageEditHint = computed(() => {
+  if (!hydrated.value) return false;
+  if (!permissions.isReady.value) return false;
+  if (!permissions.canEdit.value) return false;
+  if (!captainPageEditRequiresAdminEdit.value) return false;
+  return !adminMode.adminEditEnabled && Boolean(props.pageData);
 });
 
 const visible = computed(() => {

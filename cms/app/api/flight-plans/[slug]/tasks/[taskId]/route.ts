@@ -7,6 +7,7 @@ import {
   normaliseId,
   resolveFlightPlanBySlug,
   sanitizeFlightPlanSlug,
+  hasAdminEditOverrideForUser,
   membershipIsAcceptedPassenger,
   ensureCrewMembership,
   ensureOwnerMembership,
@@ -104,7 +105,12 @@ export async function PATCH(
   const preflight = await ensureTaskContext(req, auth, slug, taskId);
   if ('response' in preflight) return preflight.response;
 
-  const viewerMembership = auth.user
+  const hasAdminEditOverride = hasAdminEditOverrideForUser({
+    userId: auth.user?.id ?? null,
+    websiteRole: auth.user?.role ?? null,
+    adminMode: auth.adminMode,
+  });
+  let viewerMembership = auth.user
     ? await loadMembershipWithOwnerFallback({
         payload: auth.payload,
         flightPlanId: preflight.flightPlanId,
@@ -112,6 +118,18 @@ export async function PATCH(
         ownerIdHint: preflight.ownerId ?? undefined,
       })
     : null;
+  if (
+    (!viewerMembership || viewerMembership.status !== 'accepted') &&
+    hasAdminEditOverride &&
+    auth.user
+  ) {
+    viewerMembership = await ensureCrewMembership({
+      payload: auth.payload,
+      flightPlanId: preflight.flightPlanId,
+      userId: auth.user.id,
+      inviterId: preflight.ownerId ?? auth.user.id,
+    });
+  }
   const viewerIsCrew = viewerMembership
     ? ensureCrewMembershipForPlan(viewerMembership, preflight.flightPlanId)
     : false;
@@ -245,7 +263,7 @@ export async function PATCH(
       if (nextOwnerId == null) {
         return corsJson(req, { error: 'Invalid owner membership id.' }, { status: 400 }, METHODS);
       }
-      if (viewerMembership?.id !== preflight.task.ownerMembershipId) {
+      if (!hasAdminEditOverride && viewerMembership?.id !== preflight.task.ownerMembershipId) {
         return corsJson(req, { error: 'Only the current task owner can reassign ownership.' }, { status: 403 }, METHODS);
       }
     }
@@ -410,6 +428,11 @@ export async function DELETE(
   const preflight = await ensureTaskContext(req, auth, slug, taskId);
   if ('response' in preflight) return preflight.response;
 
+  const hasAdminEditOverride = hasAdminEditOverrideForUser({
+    userId: auth.user?.id ?? null,
+    websiteRole: auth.user?.role ?? null,
+    adminMode: auth.adminMode,
+  });
   const viewerResult = await ensureViewerMembership({
     req,
     auth,
@@ -425,7 +448,7 @@ export async function DELETE(
     viewerMembership.role === 'crew' &&
     viewerMembership.invitedById != null &&
     viewerMembership.invitedById === viewerMembership.userId;
-  if (viewerIsContributionCrew) {
+  if (viewerIsContributionCrew && !hasAdminEditOverride) {
     return corsJson(
       req,
       { error: 'Contributors can unclaim tasks but cannot delete them.' },
@@ -449,6 +472,7 @@ export async function DELETE(
   }
 
   const canDelete =
+    hasAdminEditOverride ||
     viewerMembership.role === 'owner' ||
     viewerMembership.id === preflight.task.ownerMembershipId;
   if (!canDelete) {

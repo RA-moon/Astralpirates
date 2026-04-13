@@ -7,6 +7,28 @@ import {
 } from '@astralpirates/shared/flightPlanLifecycle';
 import { can } from '@astralpirates/shared/authorization';
 
+const buildViewerContext = ({
+  viewerUserId,
+  viewerRole,
+  adminViewEnabled,
+  adminEditEnabled,
+}: {
+  viewerUserId: string | number | null;
+  viewerRole: string | null;
+  adminViewEnabled: boolean;
+  adminEditEnabled: boolean;
+}) => ({
+  actor: {
+    userId: viewerUserId,
+    isAuthenticated: viewerUserId != null,
+    websiteRole: viewerRole,
+  },
+  toggles: {
+    adminViewEnabled,
+    adminEditEnabled,
+  },
+});
+
 export const FLIGHT_PLAN_STATUS_LABELS: Readonly<Record<FlightPlanLifecycleStatus, string>> = {
   planned: 'Planned',
   pending: 'Pending',
@@ -67,12 +89,9 @@ export const canEditFlightPlanMission = ({
   status: unknown;
 }): boolean => {
   const terminal = isFlightPlanLifecycleTerminalStatus(resolveFlightPlanLifecycleStatus(status));
-  if (terminal && !isOwner) return false;
-  if (viewerIsContributor && !isOwner) return false;
-
   const baselineEdit = isOwner || (membershipResolved && isCrewOrganiser);
 
-  return can('editFlightPlan', {
+  const capabilityAllowed = can('editFlightPlan', {
     actor: {
       userId: viewerUserId,
       isAuthenticated: viewerUserId != null,
@@ -93,23 +112,32 @@ export const canEditFlightPlanMission = ({
       editFlightPlan: baselineEdit,
     },
   });
+  const adminOverrideApplied = capabilityAllowed && !baselineEdit;
+  if (terminal && !isOwner && !adminOverrideApplied) return false;
+  if (viewerIsContributor && !isOwner && !adminOverrideApplied) return false;
+  return capabilityAllowed;
 };
 
 export const canManageFlightPlanLifecycleForViewer = ({
   ownerId,
   viewerUserId,
   viewerRole,
+  adminViewEnabled = false,
+  adminEditEnabled = false,
 }: {
   ownerId: string | number | null;
   viewerUserId: string | number | null;
   viewerRole: string | null;
+  adminViewEnabled?: boolean;
+  adminEditEnabled?: boolean;
 }): boolean =>
   can('manageFlightPlanLifecycle', {
-    actor: {
-      userId: viewerUserId,
-      isAuthenticated: viewerUserId != null,
-      websiteRole: viewerRole,
-    },
+    ...buildViewerContext({
+      viewerUserId,
+      viewerRole,
+      adminViewEnabled,
+      adminEditEnabled,
+    }),
     owner: {
       userId: ownerId,
     },
@@ -119,18 +147,65 @@ export const canDeleteFlightPlanForViewer = ({
   ownerId,
   viewerUserId,
   viewerRole,
+  adminViewEnabled = false,
+  adminEditEnabled = false,
 }: {
   ownerId: string | number | null;
   viewerUserId: string | number | null;
   viewerRole: string | null;
+  adminViewEnabled?: boolean;
+  adminEditEnabled?: boolean;
 }): boolean =>
   can('deleteFlightPlan', {
-    actor: {
-      userId: viewerUserId,
-      isAuthenticated: viewerUserId != null,
-      websiteRole: viewerRole,
-    },
+    ...buildViewerContext({
+      viewerUserId,
+      viewerRole,
+      adminViewEnabled,
+      adminEditEnabled,
+    }),
     owner: {
       userId: ownerId,
     },
   });
+
+export const hasFlightPlanAdminReadAccess = ({
+  viewerUserId,
+  viewerRole,
+  adminViewEnabled = false,
+  adminEditEnabled = false,
+}: {
+  viewerUserId: string | number | null;
+  viewerRole: string | null;
+  adminViewEnabled?: boolean;
+  adminEditEnabled?: boolean;
+}): boolean =>
+  can(
+    'adminReadAllContent',
+    buildViewerContext({
+      viewerUserId,
+      viewerRole,
+      adminViewEnabled,
+      adminEditEnabled,
+    }),
+  );
+
+export const hasFlightPlanAdminEditAccess = ({
+  viewerUserId,
+  viewerRole,
+  adminViewEnabled = false,
+  adminEditEnabled = false,
+}: {
+  viewerUserId: string | number | null;
+  viewerRole: string | null;
+  adminViewEnabled?: boolean;
+  adminEditEnabled?: boolean;
+}): boolean =>
+  can(
+    'adminEditAllContent',
+    buildViewerContext({
+      viewerUserId,
+      viewerRole,
+      adminViewEnabled,
+      adminEditEnabled,
+    }),
+  );

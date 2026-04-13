@@ -18,8 +18,8 @@ import {
   timestamp,
   serial,
   boolean,
-  numeric,
   type AnyPgColumn,
+  numeric,
   text,
   jsonb,
   pgEnum,
@@ -783,7 +783,7 @@ export const users = pgTable(
     profileSlug: varchar("profile_slug").notNull(),
     callSign: varchar("call_sign"),
     pronouns: varchar("pronouns"),
-    avatar: integer("avatar_id").references(() => avatars.id, {
+    avatar: integer("avatar_id").references((): AnyPgColumn => avatars.id, {
       onDelete: "set null",
     }),
     avatarUrl: varchar("avatar_url"),
@@ -1967,7 +1967,7 @@ export const avatars = pgTable(
     alt: varchar("alt"),
     uploadedBy: integer("uploaded_by_id")
       .notNull()
-      .references(() => users.id, {
+      .references((): AnyPgColumn => users.id, {
         onDelete: "set null",
       }),
     updatedAt: timestamp("updated_at", {

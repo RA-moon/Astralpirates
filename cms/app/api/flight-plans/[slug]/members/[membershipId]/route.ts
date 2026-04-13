@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { authenticateRequest } from '@/app/api/_lib/auth';
 import { corsJson, corsEmpty } from '@/app/api/_lib/cors';
 import {
+  hasAdminEditOverrideForUser,
   loadMembershipWithOwnerFallback,
   loadMembershipById,
   normaliseId,
@@ -69,6 +70,11 @@ export async function PATCH(
 
   const ownerId = normaliseId((flightPlanDoc as any)?.owner);
   const crewCanPromotePassengers = Boolean((flightPlanDoc as any)?.crewCanPromotePassengers);
+  const hasAdminEditOverride = hasAdminEditOverrideForUser({
+    userId: auth.user.id,
+    websiteRole: auth.user.role,
+    adminMode: auth.adminMode,
+  });
   const actorMembership = await loadMembershipWithOwnerFallback({
     payload: auth.payload,
     flightPlanId,
@@ -78,10 +84,13 @@ export async function PATCH(
   const actorIsOwner = actorMembership?.role === 'owner' && actorMembership.status === 'accepted';
   const actorIsCrew =
     actorMembership?.role === 'crew' && actorMembership.status === 'accepted';
-  if (!actorMembership || (!actorIsOwner && !(crewCanPromotePassengers && actorIsCrew))) {
+  if (
+    !hasAdminEditOverride &&
+    (!actorMembership || (!actorIsOwner && !(crewCanPromotePassengers && actorIsCrew)))
+  ) {
     return corsJson(
       req,
-      { error: 'Only the captain (or crew organisers with permission) can manage crew roles.' },
+      { error: 'Only the captain (or crew organisers with permission) can manage crew roles unless captain admin edit mode is enabled.' },
       { status: 403 },
       METHODS,
     );

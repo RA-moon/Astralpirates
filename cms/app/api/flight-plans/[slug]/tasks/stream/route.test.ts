@@ -120,4 +120,67 @@ describe('flight plan task stream access gate', () => {
       }),
     );
   });
+
+  it('forwards admin-mode context for captain override evaluations without accepted membership', async () => {
+    vi.spyOn(authModule, 'authenticateRequest').mockResolvedValue({
+      user: { id: 42, role: 'captain' },
+      payload: { logger: { info: vi.fn(), warn: vi.fn() } },
+      adminMode: {
+        adminViewEnabled: true,
+        adminEditEnabled: true,
+        eligibility: {
+          canUseAdminView: true,
+          canUseAdminEdit: true,
+        },
+      },
+    } as any);
+
+    (membersModule.loadMembershipWithOwnerFallback as Mock).mockResolvedValue(null);
+
+    const response = await GET(makeRequest(), routeContext as any);
+    expect(response.status).toBe(403);
+
+    expect(accessPolicyModule.canUserReadFlightPlan).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user: { id: 42, role: 'captain' },
+        membershipRole: null,
+        adminMode: expect.objectContaining({
+          adminViewEnabled: true,
+          adminEditEnabled: true,
+        }),
+      }),
+    );
+  });
+
+  it('keeps denying non-captains with spoofed admin toggles', async () => {
+    vi.spyOn(authModule, 'authenticateRequest').mockResolvedValue({
+      user: { id: 55, role: 'seamen' },
+      payload: { logger: { info: vi.fn(), warn: vi.fn() } },
+      adminMode: {
+        adminViewEnabled: true,
+        adminEditEnabled: true,
+        eligibility: {
+          canUseAdminView: false,
+          canUseAdminEdit: false,
+        },
+      },
+    } as any);
+
+    (membersModule.loadMembershipWithOwnerFallback as Mock).mockResolvedValue(null);
+
+    const response = await GET(makeRequest(), routeContext as any);
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: 'Crew access required.' });
+
+    expect(accessPolicyModule.canUserReadFlightPlan).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user: { id: 55, role: 'seamen' },
+        membershipRole: null,
+        adminMode: expect.objectContaining({
+          adminViewEnabled: true,
+          adminEditEnabled: true,
+        }),
+      }),
+    );
+  });
 });

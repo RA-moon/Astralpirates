@@ -30,18 +30,25 @@ const runWeeklySummary = async ({
   baseUrl,
   slackWebhook,
   slackFailOpen = false,
+  includeWindowArgs = true,
 }) => {
-  const child = spawn(
-    process.execPath,
-    [
-      WEEKLY_SUMMARY_SCRIPT,
-      '--base',
-      baseUrl,
+  const argv = [
+    WEEKLY_SUMMARY_SCRIPT,
+    '--base',
+    baseUrl,
+  ];
+  if (includeWindowArgs) {
+    argv.push(
       '--start',
       TEST_START,
       '--end',
       TEST_END,
-    ],
+    );
+  }
+
+  const child = spawn(
+    process.execPath,
+    argv,
     {
       cwd: REPO_ROOT,
       env: {
@@ -181,3 +188,60 @@ test('weekly summary treats 404 no_service as non-fatal when SLACK_FAIL_OPEN=tru
   }
 });
 
+test('weekly summary falls back to public 7-day metrics when custom window is unauthorized', async () => {
+  let metricsCalls = 0;
+  let postedPayload = null;
+
+  const metrics = await startJsonServer((req, res) => {
+    if (req.url?.startsWith('/api/ship-status/metrics')) {
+      metricsCalls += 1;
+      const requestUrl = new URL(req.url, 'http://127.0.0.1');
+      const hasCustomWindowQuery = requestUrl.searchParams.has('start') || requestUrl.searchParams.has('end');
+
+      if (hasCustomWindowQuery) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: 'Custom window metrics require authenticated access.' }));
+        return;
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(METRICS_PAYLOAD));
+      return;
+    }
+
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('not found');
+  });
+
+  const webhook = await startJsonServer(async (req, res) => {
+    if (req.method !== 'POST') {
+      res.writeHead(405, { 'Content-Type': 'text/plain' });
+      res.end('method not allowed');
+      return;
+    }
+    const chunks = [];
+    for await (const chunk of req) {
+      chunks.push(chunk);
+    }
+    postedPayload = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('ok');
+  });
+
+  try {
+    const result = await runWeeklySummary({
+      baseUrl: metrics.baseUrl,
+      slackWebhook: webhook.baseUrl,
+      includeWindowArgs: false,
+    });
+
+    assert.equal(result.exitCode, 0, result.stderr);
+    assert.equal(metricsCalls, 2, 'expected custom-window attempt followed by public fallback request');
+    assert.match(result.stderr, /falling back to public 7-day metrics/i);
+    assert.equal(typeof postedPayload?.text, 'string');
+    assert.match(postedPayload.text, /Weekly Summary/);
+  } finally {
+    metrics.server.close();
+    webhook.server.close();
+  }
+});

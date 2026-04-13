@@ -1,7 +1,12 @@
 import { canUserReadCrewPolicy, canUserReadFlightPlan } from './accessPolicy';
 import { recordAuthorizationDecision } from './authorizationDecisionTelemetry';
 import { resolvePageEditAccess } from './pageEditorAccess';
-import { canEditFlightPlan, loadMembershipWithOwnerFallback } from './flightPlanMembers';
+import {
+  canEditFlightPlan,
+  ensureCrewMembership,
+  hasAdminEditOverrideForUser,
+  loadMembershipWithOwnerFallback,
+} from './flightPlanMembers';
 import {
   type EffectiveAdminMode,
 } from '@astralpirates/shared/adminMode';
@@ -281,12 +286,16 @@ const resolveAcceptedMembership = async ({
   user,
   flightPlanId,
   ownerIdHint,
+  adminMode,
+  autoElevateMembership = false,
   logContext,
 }: {
   payload: PayloadLike;
   user: UserLike;
   flightPlanId: number;
   ownerIdHint?: number;
+  adminMode?: EffectiveAdminMode | null;
+  autoElevateMembership?: boolean;
   logContext: string;
 }): Promise<{ id: number; role: string } | null> => {
   if (user?.id == null) return null;
@@ -298,12 +307,29 @@ const resolveAcceptedMembership = async ({
       userId: user.id,
       ownerIdHint,
     });
-    if (resolved?.status !== 'accepted') return null;
-    const membershipId = normalizeId((resolved as { id?: unknown }).id);
+    let acceptedMembership = resolved;
+    if (
+      acceptedMembership?.status !== 'accepted' &&
+      autoElevateMembership &&
+      hasAdminEditOverrideForUser({
+        userId: user.id,
+        websiteRole: user?.role ?? null,
+        adminMode,
+      })
+    ) {
+      acceptedMembership = await ensureCrewMembership({
+        payload: payload as any,
+        flightPlanId,
+        userId: user.id,
+        inviterId: ownerIdHint ?? user.id,
+      });
+    }
+    if (acceptedMembership?.status !== 'accepted') return null;
+    const membershipId = normalizeId((acceptedMembership as { id?: unknown }).id);
     if (membershipId == null) return null;
     const role =
-      typeof (resolved as { role?: unknown }).role === 'string'
-        ? ((resolved as { role?: string }).role ?? '').trim()
+      typeof (acceptedMembership as { role?: unknown }).role === 'string'
+        ? ((acceptedMembership as { role?: string }).role ?? '').trim()
         : '';
     if (!role) return null;
     return {
@@ -436,7 +462,13 @@ export const resolveGalleryFileReadAccess = async ({
       user,
       flightPlanId,
       ownerIdHint: normalizeId(flightPlanDoc.owner) ?? undefined,
+      adminMode,
       logContext: '[media-access] failed to resolve flight-plan membership for gallery read check',
+    });
+    const hasAdminEditOverride = hasAdminEditOverrideForUser({
+      userId: user?.id ?? null,
+      websiteRole: user?.role ?? null,
+      adminMode,
     });
 
     const canRead = canUserReadFlightPlan({
@@ -455,7 +487,11 @@ export const resolveGalleryFileReadAccess = async ({
     }
 
     const mediaVisibility = resolveFlightPlanMediaVisibility(flightPlanDoc.mediaVisibility);
-    if (mediaVisibility === 'crew_only' && !isCrewOrOwnerMembership(membership)) {
+    if (
+      mediaVisibility === 'crew_only' &&
+      !isCrewOrOwnerMembership(membership) &&
+      !hasAdminEditOverride
+    ) {
       return denied(403, 'You do not have permission to view this media.');
     }
 
@@ -552,8 +588,14 @@ export const resolveTaskAttachmentFileReadAccess = async ({
     user,
     flightPlanId,
     ownerIdHint: normalizeId(flightPlanDoc.owner) ?? undefined,
+    adminMode,
     logContext:
       '[media-access] failed to resolve flight-plan membership for task attachment read check',
+  });
+  const hasAdminEditOverride = hasAdminEditOverrideForUser({
+    userId: user?.id ?? null,
+    websiteRole: user?.role ?? null,
+    adminMode,
   });
 
   const canReadFlightPlan = canUserReadFlightPlan({
@@ -572,11 +614,19 @@ export const resolveTaskAttachmentFileReadAccess = async ({
   }
 
   const mediaVisibility = resolveFlightPlanMediaVisibility(flightPlanDoc.mediaVisibility);
-  if (mediaVisibility === 'crew_only' && !isCrewOrOwnerMembership(membership)) {
+  if (
+    mediaVisibility === 'crew_only' &&
+    !isCrewOrOwnerMembership(membership) &&
+    !hasAdminEditOverride
+  ) {
     return denied(403, 'You do not have permission to view this media.');
   }
 
-  if (Boolean(taskDoc.isCrewOnly) && !isCrewOrOwnerMembership(membership)) {
+  if (
+    Boolean(taskDoc.isCrewOnly) &&
+    !isCrewOrOwnerMembership(membership) &&
+    !hasAdminEditOverride
+  ) {
     return denied(403, 'You do not have permission to view this media.');
   }
 
@@ -653,6 +703,8 @@ export const resolveMediaModifyAccess = async (
       user: input.user,
       flightPlanId: input.flightPlanId,
       ownerIdHint: input.ownerIdHint,
+      adminMode: input.adminMode,
+      autoElevateMembership: true,
       logContext:
         '[media-access] failed to resolve flight-plan membership for task attachment modify check',
     });

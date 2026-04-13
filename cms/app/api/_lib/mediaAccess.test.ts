@@ -815,6 +815,47 @@ describe('resolveMediaModifyAccess', () => {
       error: 'Only captains, crew organisers, or the task owner can remove attachments.',
     });
   });
+
+  it('auto-elevates captain admin-edit for task-attachment uploads without membership', async () => {
+    vi.spyOn(flightPlanMembers, 'loadMembershipWithOwnerFallback').mockResolvedValue(null);
+    const ensureCrewMembershipSpy = vi
+      .spyOn(flightPlanMembers, 'ensureCrewMembership')
+      .mockResolvedValue({
+        id: 91,
+        role: 'crew',
+        status: 'accepted',
+      } as any);
+
+    const result = await resolveMediaModifyAccess({
+      scope: 'task-attachment',
+      payload: makePayload() as any,
+      user: { id: 17, role: 'captain' } as any,
+      action: 'upload',
+      flightPlanId: 44,
+      ownerIdHint: 9,
+      passengersCanCreateTasks: false,
+      isCrewOnly: false,
+      adminMode: resolveEffectiveAdminMode({
+        role: 'captain',
+        adminViewRequested: true,
+        adminEditRequested: true,
+      }),
+    });
+
+    expect(result).toEqual({
+      allow: true,
+      membership: {
+        id: 91,
+        role: 'crew',
+      },
+    });
+    expect(ensureCrewMembershipSpy).toHaveBeenCalledWith({
+      payload: expect.anything(),
+      flightPlanId: 44,
+      userId: 17,
+      inviterId: 9,
+    });
+  });
 });
 
 describe('resolveMediaDownloadAccess', () => {

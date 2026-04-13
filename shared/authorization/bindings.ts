@@ -125,10 +125,14 @@ const bindings: Readonly<Record<AuthorizationCapability, AuthorizationBinding>> 
     canAdminEditAllContent(context) || Boolean(context.attributes?.editFlightPlan === true),
   manageFlightPlanLifecycle: (context) =>
     isAuthenticated(context) &&
-    (isOwner(context) || isRoleAtLeast(context.actor.websiteRole, 'sailing-master')),
+    (canAdminEditAllContent(context) ||
+      isOwner(context) ||
+      isRoleAtLeast(context.actor.websiteRole, 'sailing-master')),
   deleteFlightPlan: (context) =>
     isAuthenticated(context) &&
-    (isOwner(context) || isRoleAtLeast(context.actor.websiteRole, 'quartermaster')),
+    (canAdminEditAllContent(context) ||
+      isOwner(context) ||
+      isRoleAtLeast(context.actor.websiteRole, 'quartermaster')),
   downloadMedia: (context) =>
     canAdminReadAllContent(context) || Boolean(context.attributes?.downloadMedia === true),
   manageMissionMedia: (context) =>

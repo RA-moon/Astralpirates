@@ -665,6 +665,30 @@ export const buildFlightPlanAuthorizationContext = ({
   } as const;
 };
 
+export const hasAdminEditOverrideForUser = ({
+  userId,
+  websiteRole,
+  adminMode,
+}: {
+  userId: IdLike;
+  websiteRole?: unknown;
+  adminMode?: EffectiveAdminMode | null;
+}): boolean => {
+  const actorId = normaliseId(userId);
+  if (actorId == null) return false;
+  return can('adminEditAllContent', {
+    actor: {
+      userId: actorId,
+      isAuthenticated: true,
+      websiteRole: normalizeWebsiteRole(websiteRole),
+    },
+    toggles: {
+      adminViewEnabled: adminMode?.adminViewEnabled ?? false,
+      adminEditEnabled: adminMode?.adminEditEnabled ?? false,
+    },
+  });
+};
+
 export const evaluateFlightPlanReadAccessDecision = ({
   user,
   ownerId,
@@ -772,8 +796,10 @@ export const evaluateFlightPlanEditAccessDecision = ({
     }),
   );
 
-  const blockedByContributor = viewerIsContributor && !isOwner;
-  const blockedByTerminal = isFlightPlanLifecycleTerminalStatus(status) && !isOwner;
+  const adminOverrideApplied = capabilityAllowed && !baselineEdit;
+  const blockedByContributor = !adminOverrideApplied && viewerIsContributor && !isOwner;
+  const blockedByTerminal =
+    !adminOverrideApplied && isFlightPlanLifecycleTerminalStatus(status) && !isOwner;
   const allowed =
     capabilityAllowed &&
     !blockedByContributor &&
@@ -782,7 +808,7 @@ export const evaluateFlightPlanEditAccessDecision = ({
   return {
     allowed,
     baselineEdit,
-    adminOverrideApplied: capabilityAllowed && !baselineEdit,
+    adminOverrideApplied,
     blockedByTerminal,
     blockedByContributor,
   };
@@ -1105,14 +1131,21 @@ export const ownerCanInvite = async ({
   flightPlanId,
   userId,
   ownerIdHint,
+  websiteRole,
+  adminMode,
   allowCrewInvites = false,
 }: {
   payload: Payload;
   flightPlanId: IdLike;
   userId: IdLike;
   ownerIdHint?: IdLike;
+  websiteRole?: unknown;
+  adminMode?: EffectiveAdminMode | null;
   allowCrewInvites?: boolean;
 }): Promise<boolean> => {
+  if (hasAdminEditOverrideForUser({ userId, websiteRole, adminMode })) {
+    return true;
+  }
   const membership = await loadMembershipWithOwnerFallback({
     payload,
     flightPlanId,

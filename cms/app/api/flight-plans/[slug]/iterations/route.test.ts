@@ -80,6 +80,43 @@ describe('POST /api/flight-plans/:slug/iterations', () => {
     });
   });
 
+  it('does not allow spoofed admin toggles for non-captain iteration writes', async () => {
+    mockAuth.user = { id: 99, role: 'seamen' } as any;
+    mockAuth.adminMode = {
+      adminViewEnabled: true,
+      adminEditEnabled: true,
+      eligibility: {
+        canUseAdminView: false,
+        canUseAdminEdit: false,
+      },
+    } as any;
+    payload.find.mockResolvedValueOnce({
+      docs: [
+        {
+          id: 77,
+          slug: 'demo',
+          title: 'Demo Mission',
+          owner: 12,
+          category: 'project',
+          status: 'success',
+          series: 55,
+          iterationNumber: 1,
+        },
+      ],
+    });
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ slug: 'demo' }),
+    });
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({
+      error: 'Only the captain or sailing-master+ can create mission iterations.',
+    });
+    expect(payload.create).not.toHaveBeenCalled();
+    expect(payload.update).not.toHaveBeenCalled();
+  });
+
   it('requires eventDate for event mission iterations', async () => {
     payload.find.mockResolvedValueOnce({
       docs: [

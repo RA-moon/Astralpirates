@@ -3,6 +3,8 @@ import type { NextRequest } from 'next/server';
 import { authenticateRequest } from '@/app/api/_lib/auth';
 import { corsEmpty, corsJson } from '@/app/api/_lib/cors';
 import {
+  ensureCrewMembership,
+  hasAdminEditOverrideForUser,
   loadMembershipWithOwnerFallback,
   membershipIsAcceptedPassenger,
   membershipMatchesFlightPlan,
@@ -151,12 +153,25 @@ export async function POST(
   const preflight = await ensureTaskAccess({ req, auth, slug, taskId });
   if ('response' in preflight) return preflight.response;
 
-  const viewerMembership = await loadMembershipWithOwnerFallback({
+  const hasAdminEditOverride = hasAdminEditOverrideForUser({
+    userId: auth.user.id,
+    websiteRole: auth.user.role,
+    adminMode: auth.adminMode,
+  });
+  let viewerMembership = await loadMembershipWithOwnerFallback({
     payload: auth.payload,
     flightPlanId: preflight.flightPlanId,
     userId: auth.user.id,
     ownerIdHint: preflight.ownerId ?? undefined,
   });
+  if ((!viewerMembership || viewerMembership.status !== 'accepted') && hasAdminEditOverride) {
+    viewerMembership = await ensureCrewMembership({
+      payload: auth.payload,
+      flightPlanId: preflight.flightPlanId,
+      userId: auth.user.id,
+      inviterId: preflight.ownerId ?? auth.user.id,
+    });
+  }
   if (!viewerMembership || viewerMembership.status !== 'accepted') {
     return corsJson(req, { error: 'Crew access required.' }, { status: 403 }, METHODS);
   }
@@ -266,12 +281,25 @@ export async function DELETE(
   const preflight = await ensureTaskAccess({ req, auth, slug, taskId });
   if ('response' in preflight) return preflight.response;
 
-  const viewerMembership = await loadMembershipWithOwnerFallback({
+  const hasAdminEditOverride = hasAdminEditOverrideForUser({
+    userId: auth.user.id,
+    websiteRole: auth.user.role,
+    adminMode: auth.adminMode,
+  });
+  let viewerMembership = await loadMembershipWithOwnerFallback({
     payload: auth.payload,
     flightPlanId: preflight.flightPlanId,
     userId: auth.user.id,
     ownerIdHint: preflight.ownerId ?? undefined,
   });
+  if ((!viewerMembership || viewerMembership.status !== 'accepted') && hasAdminEditOverride) {
+    viewerMembership = await ensureCrewMembership({
+      payload: auth.payload,
+      flightPlanId: preflight.flightPlanId,
+      userId: auth.user.id,
+      inviterId: preflight.ownerId ?? auth.user.id,
+    });
+  }
   if (!viewerMembership || viewerMembership.status !== 'accepted') {
     return corsJson(req, { error: 'Crew access required.' }, { status: 403 }, METHODS);
   }

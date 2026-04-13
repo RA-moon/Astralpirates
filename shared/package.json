@@ -133,7 +133,7 @@
     "prepare": "pnpm run build"
   },
   "dependencies": {
-    "zod": "^4.1.12"
+    "zod": "4.1.12"
   },
   "devDependencies": {
     "@types/node": "^25.3.3",

@@ -150,7 +150,7 @@
           :can-create="canCreateTasks"
           :loading="loadingTasks"
           :viewer-membership-id="viewerMembershipId"
-          :viewer-is-captain="isOwner"
+          :viewer-is-captain="viewerCanDeleteAnyTask"
           :can-claim="canClaimTasks"
           :creating-task="creatingTask"
           :is-task-updating="isTaskUpdating"
@@ -197,10 +197,10 @@
 
           <template v-if="canViewRoster">
             <div
-              v-if="isOwner || isCrewOrganiser"
+              v-if="canManageCollaborationControls"
               class="flight-plan__collaboration-controls"
             >
-              <div v-if="isOwner" class="flight-plan__crew-toggle">
+              <div v-if="canManageOwnerSettings" class="flight-plan__crew-toggle">
                 <div class="flight-plan__visibility-toggle">
                   <UiInline :gap="'var(--space-sm)'" align="center">
                     <UiSwitch
@@ -505,6 +505,8 @@ import {
   canEditFlightPlanMission,
   createFlightPlanIteration,
   canDeleteFlightPlanForViewer,
+  hasFlightPlanAdminEditAccess,
+  hasFlightPlanAdminReadAccess,
   canManageFlightPlanLifecycleForViewer,
   getFlightPlanBucketLabel,
   getFlightPlanStatusLabel,
@@ -704,6 +706,8 @@ const canManageLifecycle = computed(() =>
     ownerId: planOwnerId.value,
     viewerUserId: sessionUserId.value,
     viewerRole: viewerRole.value,
+    adminViewEnabled: adminMode.adminViewEnabled,
+    adminEditEnabled: adminMode.adminEditEnabled,
   }),
 );
 const canDeleteMission = computed(() =>
@@ -711,6 +715,24 @@ const canDeleteMission = computed(() =>
     ownerId: planOwnerId.value,
     viewerUserId: sessionUserId.value,
     viewerRole: viewerRole.value,
+    adminViewEnabled: adminMode.adminViewEnabled,
+    adminEditEnabled: adminMode.adminEditEnabled,
+  }),
+);
+const hasAdminReadAccess = computed(() =>
+  hasFlightPlanAdminReadAccess({
+    viewerUserId: sessionUserId.value,
+    viewerRole: viewerRole.value,
+    adminViewEnabled: adminMode.adminViewEnabled,
+    adminEditEnabled: adminMode.adminEditEnabled,
+  }),
+);
+const hasAdminEditAccess = computed(() =>
+  hasFlightPlanAdminEditAccess({
+    viewerUserId: sessionUserId.value,
+    viewerRole: viewerRole.value,
+    adminViewEnabled: adminMode.adminViewEnabled,
+    adminEditEnabled: adminMode.adminEditEnabled,
   }),
 );
 
@@ -836,7 +858,9 @@ const rosterGroupItems = computed(() =>
 );
 
 const isCrewOrganiser = computed(() => rosterViewerIsCrewOrganiser.value);
-const canInvite = computed(() => isOwner.value || crewCanInvite.value);
+const canInvite = computed(
+  () => isOwner.value || crewCanInvite.value || hasAdminEditAccess.value,
+);
 const viewerIsAcceptedRosterMember = computed(
   () => viewerMembership.value?.status === 'accepted',
 );
@@ -845,7 +869,14 @@ const canViewRoster = computed(
     planIsPublic.value ||
     isOwner.value ||
     viewerIsAcceptedRosterMember.value ||
-    (planPublicContributions.value && session.isAuthenticated),
+    (planPublicContributions.value && session.isAuthenticated) ||
+    hasAdminReadAccess.value,
+);
+const canManageOwnerSettings = computed(
+  () => isOwner.value || hasAdminEditAccess.value,
+);
+const canManageCollaborationControls = computed(
+  () => canManageOwnerSettings.value || isCrewOrganiser.value,
 );
 
 const runQueuedPlanWrite = async ({
@@ -929,7 +960,10 @@ const publicContributionsFeedback = ref('');
 const publicContributionsFeedbackIsError = ref(false);
 const publicContributionsTogglePending = ref(false);
 const viewerCanPromotePassengers = computed(
-  () => isOwner.value || (crewPromotionSetting.value && isCrewOrganiser.value),
+  () =>
+    isOwner.value ||
+    hasAdminEditAccess.value ||
+    (crewPromotionSetting.value && isCrewOrganiser.value),
 );
 const viewerMembershipId = computed(() => viewerMembership.value?.id ?? null);
 const viewerIsAcceptedPassenger = computed(
@@ -945,7 +979,11 @@ const canViewTasks = computed(
   () =>
     viewerMembership.value?.status === 'accepted' ||
     isOwner.value ||
-    (planPublicContributions.value && session.isAuthenticated),
+    (planPublicContributions.value && session.isAuthenticated) ||
+    hasAdminReadAccess.value,
+);
+const viewerCanDeleteAnyTask = computed(
+  () => isOwner.value || hasAdminEditAccess.value,
 );
 const canClaimTasks = computed(
   () => planPublicContributions.value && session.isAuthenticated && !canEditMission.value,
@@ -1048,7 +1086,7 @@ const isPromotingMember = (memberId: number | null) =>
   typeof memberId === 'number' ? promotingMembers.value.has(memberId) : false;
 
 const promoteMemberToCrew = async (memberId: number | null) => {
-  if (typeof memberId !== 'number') return;
+  if (typeof memberId !== 'number' || !viewerCanPromotePassengers.value) return;
   setPromotingMember(memberId, true);
   try {
     const result = await promoteGuest(memberId);
@@ -1189,7 +1227,7 @@ const handleTaskLinkRemove = async ({
 };
 
 const togglePlanVisibility = async (nextValue: boolean) => {
-  if (!isOwner.value || !flightPlanSlug.value) return;
+  if (!canManageOwnerSettings.value || !flightPlanSlug.value) return;
   planVisibilityTogglePending.value = true;
   planVisibilityFeedback.value = '';
   planVisibilityFeedbackIsError.value = false;
@@ -1215,7 +1253,7 @@ const togglePlanVisibility = async (nextValue: boolean) => {
 };
 
 const togglePublicContributions = async (nextValue: boolean) => {
-  if (!isOwner.value || !flightPlanSlug.value) return;
+  if (!canManageOwnerSettings.value || !flightPlanSlug.value) return;
   publicContributionsTogglePending.value = true;
   publicContributionsFeedback.value = '';
   publicContributionsFeedbackIsError.value = false;
@@ -1248,7 +1286,7 @@ const passengerTaskFeedback = ref('');
 const passengerTaskFeedbackIsError = ref(false);
 
 const toggleCrewPromotionSetting = async (nextValue: boolean) => {
-  if (!isOwner.value || !flightPlanSlug.value) return;
+  if (!canManageOwnerSettings.value || !flightPlanSlug.value) return;
   crewPromotionTogglePending.value = true;
   crewPromotionFeedback.value = '';
   crewPromotionFeedbackIsError.value = false;
@@ -1274,7 +1312,7 @@ const toggleCrewPromotionSetting = async (nextValue: boolean) => {
 };
 
 const togglePassengerTaskSetting = async (nextValue: boolean) => {
-  if (!isOwner.value || !flightPlanSlug.value) return;
+  if (!canManageOwnerSettings.value || !flightPlanSlug.value) return;
   passengerTaskTogglePending.value = true;
   passengerTaskFeedback.value = '';
   passengerTaskFeedbackIsError.value = false;

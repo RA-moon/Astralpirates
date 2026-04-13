@@ -394,6 +394,119 @@ describe('PATCH /api/flight-plans/:slug', () => {
     expect(payload.update).not.toHaveBeenCalled();
   });
 
+  it('allows captain admin-edit override to change captain-only visibility controls without ownership', async () => {
+    const payload = createPayload();
+    payload.find
+      .mockResolvedValueOnce({
+        docs: [
+          {
+            id: 34,
+            slug: 'captain-admin-controls',
+            owner: { id: 4 },
+            body: [{ type: 'paragraph', children: [{ text: 'Body' }] }],
+            isPublic: false,
+            dateCode: '20250110',
+            displayDate: 'January 10, 2025',
+            eventDate: '2025-01-10T00:00:00.000Z',
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        docs: [{ id: 4, profileSlug: 'captain', callSign: 'Captain', role: 'captain' }],
+      });
+    payload.update.mockResolvedValue({
+      id: 34,
+      slug: 'captain-admin-controls',
+      owner: { id: 4 },
+      body: [{ type: 'paragraph', children: [{ text: 'Body' }] }],
+      isPublic: true,
+      visibility: 'public',
+      publicContributions: false,
+      dateCode: '20250110',
+      displayDate: 'January 10, 2025',
+      eventDate: '2025-01-10T00:00:00.000Z',
+    });
+
+    mockedAuthenticateRequest.mockResolvedValue({
+      payload,
+      user: { id: 7, role: 'captain' },
+      adminMode: {
+        adminViewEnabled: true,
+        adminEditEnabled: true,
+        eligibility: {
+          canUseAdminView: true,
+          canUseAdminEdit: true,
+        },
+      },
+    } as any);
+    mockedBuildRequestForUser.mockResolvedValue({} as any);
+    mockedCanEditFlightPlan.mockResolvedValue(true);
+
+    const response = await PATCH(makeRequest({ isPublic: true }), {
+      params: { slug: 'captain-admin-controls' },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.plan.isPublic).toBe(true);
+    expect(payload.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 34,
+        data: expect.objectContaining({
+          isPublic: true,
+        }),
+      }),
+    );
+  });
+
+  it('does not allow spoofed admin toggles for non-captain owner-only mission settings', async () => {
+    const payload = createPayload();
+    payload.find
+      .mockResolvedValueOnce({
+        docs: [
+          {
+            id: 35,
+            slug: 'spoofed-owner-controls',
+            owner: { id: 4 },
+            body: [{ type: 'paragraph', children: [{ text: 'Body' }] }],
+            isPublic: false,
+            dateCode: '20250110',
+            displayDate: 'January 10, 2025',
+            eventDate: '2025-01-10T00:00:00.000Z',
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        docs: [{ id: 4, profileSlug: 'captain', callSign: 'Captain', role: 'captain' }],
+      });
+
+    mockedAuthenticateRequest.mockResolvedValue({
+      payload,
+      user: { id: 7, role: 'seamen' },
+      adminMode: {
+        adminViewEnabled: true,
+        adminEditEnabled: true,
+        eligibility: {
+          canUseAdminView: false,
+          canUseAdminEdit: false,
+        },
+      },
+    } as any);
+    mockedBuildRequestForUser.mockResolvedValue({} as any);
+    mockedCanEditFlightPlan.mockResolvedValue(true);
+
+    const response = await PATCH(makeRequest({ isPublic: true }), {
+      params: { slug: 'spoofed-owner-controls' },
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(body.error).toMatch(
+      /Only the captain can change mission collaboration or visibility settings/i,
+    );
+    expect(payload.update).not.toHaveBeenCalled();
+  });
+
   it('rejects invalid category values', async () => {
     const payload = createPayload();
     payload.find

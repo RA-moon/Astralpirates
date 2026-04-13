@@ -98,6 +98,24 @@ test('flight-plan lifecycle capabilities map to owner and role thresholds', () =
     }),
     false,
   );
+
+  assert.equal(
+    can('manageFlightPlanLifecycle', {
+      actor: { userId: 9, isAuthenticated: true, websiteRole: 'captain' },
+      owner: { userId: 7 },
+      toggles: { adminViewEnabled: true, adminEditEnabled: true },
+    }),
+    true,
+  );
+
+  assert.equal(
+    can('deleteFlightPlan', {
+      actor: { userId: 9, isAuthenticated: true, websiteRole: 'captain' },
+      owner: { userId: 7 },
+      toggles: { adminViewEnabled: true, adminEditEnabled: true },
+    }),
+    true,
+  );
 });
 
 test('website capability thresholds preserve legacy minimum-role behavior', () => {

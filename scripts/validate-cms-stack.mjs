@@ -15,11 +15,11 @@ const pkgPath = path.join(projectRoot, 'cms', 'package.json');
 
 const REQUIRED = {
   dependencies: {
-    payload: '3.78.0',
-    '@payloadcms/next': '3.78.0',
-    '@payloadcms/db-postgres': '3.78.0',
-    '@payloadcms/drizzle': '3.78.0',
-    '@payloadcms/richtext-lexical': '3.78.0',
+    payload: '3.79.1',
+    '@payloadcms/next': '3.79.1',
+    '@payloadcms/db-postgres': '3.79.1',
+    '@payloadcms/drizzle': '3.79.1',
+    '@payloadcms/richtext-lexical': '3.79.1',
     next: '15.5.10',
     react: '19.2.0',
     'react-dom': '19.2.0',

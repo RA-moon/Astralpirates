@@ -19,6 +19,7 @@ import {
   normaliseId,
   canEditFlightPlan,
   evaluateFlightPlanReadAccessDecision,
+  hasAdminEditOverrideForUser,
   loadMembershipWithOwnerFallback,
   type FlightPlanMembershipRecord,
 } from '../../_lib/flightPlanMembers';
@@ -831,6 +832,11 @@ export async function PATCH(
 
     const ownerId = normaliseId((doc as any)?.owner);
     const authUserId = normaliseId(auth.user.id);
+    const hasAdminEditOverride = hasAdminEditOverrideForUser({
+      userId: auth.user.id,
+      websiteRole: auth.user.role,
+      adminMode: auth.adminMode,
+    });
     const mayEdit = await canEditFlightPlan({
       payload: auth.payload,
       flightPlanId,
@@ -868,7 +874,8 @@ export async function PATCH(
     const lifecycleStatus = resolveFlightPlanLifecycleStatus((doc as any)?.status);
     if (
       isTerminalFlightPlanStatus(lifecycleStatus) &&
-      ownerId !== authUserId
+      ownerId !== authUserId &&
+      !hasAdminEditOverride
     ) {
       recordAuthorizationDecision({
         payload: auth.payload,
@@ -1127,10 +1134,13 @@ export async function PATCH(
       );
     }
 
-    if (ownerOnlySettingsGuard && ownerId !== authUserId) {
+    if (ownerOnlySettingsGuard && ownerId !== authUserId && !hasAdminEditOverride) {
       return corsJson(
         req,
-        { error: 'Only the captain can change mission collaboration or visibility settings.' },
+        {
+          error:
+            'Only the captain can change mission collaboration or visibility settings unless captain admin edit mode is enabled.',
+        },
         { status: 403 },
         METHODS,
       );
@@ -1565,7 +1575,11 @@ export async function DELETE(
       );
     }
 
-    const deleteAllowed = canHardDeleteFlightPlan({ ownerId, user: auth.user });
+    const deleteAllowed = canHardDeleteFlightPlan({
+      ownerId,
+      user: auth.user,
+      adminMode: auth.adminMode,
+    });
     recordAuthorizationDecision({
       payload: auth.payload,
       capability: 'deleteFlightPlan',

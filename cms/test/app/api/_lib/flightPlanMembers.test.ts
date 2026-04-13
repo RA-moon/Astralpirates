@@ -192,6 +192,28 @@ describe('flightPlanMembers helpers', () => {
 
       expect(result).toBe(true);
     });
+
+    it('allows captain admin-edit override even without membership', async () => {
+      const payload = mockPayload();
+      payload.find.mockResolvedValueOnce({ docs: [] });
+
+      const result = await ownerCanInvite({
+        payload: payload as any,
+        flightPlanId: 8,
+        userId: 77,
+        websiteRole: 'captain',
+        adminMode: {
+          adminViewEnabled: true,
+          adminEditEnabled: true,
+          eligibility: {
+            canUseAdminView: true,
+            canUseAdminEdit: true,
+          },
+        },
+      });
+
+      expect(result).toBe(true);
+    });
   });
 
   describe('canEditFlightPlan', () => {
@@ -232,7 +254,7 @@ describe('flightPlanMembers helpers', () => {
       expect(result).toBe(true);
     });
 
-    it('keeps terminal mission edits owner-only even when admin-edit is enabled', async () => {
+    it('allows terminal mission edits when captain admin-edit override is enabled', async () => {
       const payload = mockPayload();
       payload.find.mockResolvedValueOnce({ docs: [] });
 
@@ -253,7 +275,7 @@ describe('flightPlanMembers helpers', () => {
         status: 'success',
       });
 
-      expect(result).toBe(false);
+      expect(result).toBe(true);
     });
 
     it('blocks contributor-origin crew memberships when contributor policy is enforced', async () => {

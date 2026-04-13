@@ -139,6 +139,30 @@ describe('flight plan task routes', () => {
     expect(error.error).toContain('captains or crew organisers');
   });
 
+  it('keeps crew-only task content unmasked for captain admin-edit without membership', async () => {
+    mockAuth.user = { id: 42, role: 'captain' } as any;
+    mockAuth.adminMode = {
+      adminViewEnabled: true,
+      adminEditEnabled: true,
+      eligibility: {
+        canUseAdminView: true,
+        canUseAdminEdit: true,
+      },
+    };
+    (membersModule.loadMembershipWithOwnerFallback as Mock).mockResolvedValue(null);
+    (tasksModule.listTasksForFlightPlan as Mock).mockResolvedValue([
+      makeTaskRecord({ title: 'Crew-only', isCrewOnly: true }),
+    ]);
+
+    const response = await GET(createJsonRequest('GET'), {
+      params: Promise.resolve({ slug: 'demo' }),
+    });
+
+    expect(response.status).toBe(200);
+    const serializeCall = (tasksModule.serializeTask as Mock).mock.calls[0];
+    expect(serializeCall?.[2]).toMatchObject({ maskContent: false });
+  });
+
   it('prevents non-owners from reassigning ownership or deleting tasks', async () => {
     (membersModule.loadMembershipWithOwnerFallback as Mock).mockResolvedValue(
       makeMembershipRecord({ id: 8, userId: 303 }),
@@ -161,6 +185,62 @@ describe('flight plan task routes', () => {
     expect(deleteResponse.status).toBe(403);
     const deleteError = await deleteResponse.json();
     expect(deleteError.error).toContain('Only captains or task owners');
+  });
+
+  it('allows captain admin-edit override to update and delete tasks without existing membership', async () => {
+    mockAuth.user = { id: 42, role: 'captain' } as any;
+    mockAuth.adminMode = {
+      adminViewEnabled: true,
+      adminEditEnabled: true,
+      eligibility: {
+        canUseAdminView: true,
+        canUseAdminEdit: true,
+      },
+    };
+    (membersModule.loadMembershipWithOwnerFallback as Mock).mockResolvedValue(null);
+    (membersModule.ensureCrewMembership as Mock).mockResolvedValue(
+      makeMembershipRecord({ id: 33, userId: 42, role: 'crew' }),
+    );
+    (membersModule.loadMembershipsByIds as Mock).mockResolvedValue(
+      new Map<number, FlightPlanMembershipRecord>([
+        [33, makeMembershipRecord({ id: 33, userId: 42, role: 'crew' })],
+        [5, makeMembershipRecord({ id: 5, userId: 11, role: 'owner' })],
+      ]),
+    );
+    (tasksModule.loadTaskById as Mock).mockResolvedValue(
+      makeTaskRecord({ ownerMembershipId: 5, assigneeMembershipIds: [] }),
+    );
+    (tasksModule.buildMembershipSummaryMap as Mock).mockResolvedValue({
+      membershipMap: new Map<number, FlightPlanMembershipRecord>([
+        [33, makeMembershipRecord({ id: 33, userId: 42, role: 'crew' })],
+        [5, makeMembershipRecord({ id: 5, userId: 11, role: 'owner' })],
+      ]),
+      summaryByMembership: new Map(),
+    });
+
+    const patchResponse = (await PATCH(
+      createJsonRequest('PATCH', { title: 'Admin override edit' }),
+      { params: Promise.resolve({ slug: 'demo', taskId: '99' }) },
+    )) as Response;
+    expect(patchResponse.status).toBe(200);
+    expect(membersModule.ensureCrewMembership).toHaveBeenCalledWith({
+      payload,
+      flightPlanId: 77,
+      userId: 42,
+      inviterId: 11,
+    });
+
+    const deleteResponse = (await DELETE(createJsonRequest('DELETE'), {
+      params: Promise.resolve({ slug: 'demo', taskId: '99' }),
+    })) as Response;
+    expect(deleteResponse.status).toBe(204);
+    expect(payload.delete).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'flight-plan-tasks',
+        id: 99,
+        overrideAccess: true,
+      }),
+    );
   });
 
   it('filters invalid assignee ids when creating tasks', async () => {
@@ -274,5 +354,70 @@ describe('flight plan task routes', () => {
       (call: any[]) => call[0]?.collection === 'flight-plan-tasks',
       );
     expect(unclaimUpdate?.[0].data.ownerMembership).toBe(9);
+  });
+
+  it('allows captain admin-edit to create tasks without existing membership', async () => {
+    mockAuth.user = { id: 42, role: 'captain' } as any;
+    mockAuth.adminMode = {
+      adminViewEnabled: true,
+      adminEditEnabled: true,
+      eligibility: {
+        canUseAdminView: true,
+        canUseAdminEdit: true,
+      },
+    };
+    (membersModule.loadMembershipWithOwnerFallback as Mock).mockResolvedValue(null);
+    (membersModule.ensureCrewMembership as Mock).mockResolvedValue(
+      makeMembershipRecord({ id: 33, userId: 42, role: 'crew' }),
+    );
+    (tasksModule.buildMembershipSummaryMap as Mock).mockResolvedValue({
+      membershipMap: new Map<number, FlightPlanMembershipRecord>([
+        [33, makeMembershipRecord({ id: 33, userId: 42, role: 'crew' })],
+      ]),
+      summaryByMembership: new Map(),
+    });
+
+    const response = await POST(
+      createJsonRequest('POST', {
+        title: 'Admin override task',
+        state: 'ready',
+      }),
+      { params: Promise.resolve({ slug: 'demo' }) },
+    );
+
+    expect(response.status).toBe(201);
+    expect(membersModule.ensureCrewMembership).toHaveBeenCalledWith({
+      payload,
+      flightPlanId: 77,
+      userId: 42,
+      inviterId: 11,
+    });
+  });
+
+  it('does not allow spoofed admin toggles for non-captain task creation without membership', async () => {
+    mockAuth.user = { id: 88, role: 'seamen' } as any;
+    mockAuth.adminMode = {
+      adminViewEnabled: true,
+      adminEditEnabled: true,
+      eligibility: {
+        canUseAdminView: false,
+        canUseAdminEdit: false,
+      },
+    } as any;
+    (membersModule.loadMembershipWithOwnerFallback as Mock).mockResolvedValue(null);
+
+    const response = await POST(
+      createJsonRequest('POST', {
+        title: 'Denied task',
+        state: 'ready',
+      }),
+      { params: Promise.resolve({ slug: 'demo' }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(body).toEqual({ error: 'Crew access required.' });
+    expect(membersModule.ensureCrewMembership).not.toHaveBeenCalled();
+    expect(payload.create).not.toHaveBeenCalled();
   });
 });

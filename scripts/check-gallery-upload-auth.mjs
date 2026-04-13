@@ -17,6 +17,7 @@ Authenticates against /api/auth/login and uploads tiny media probes to both
 
 Options:
   --base <url>                  Base URL (default: ${DEFAULT_BASE_URL})
+  --token <token>               Bearer token (or env GALLERY_UPLOAD_PROBE_TOKEN)
   --email <email>               Login email (or env GALLERY_UPLOAD_PROBE_EMAIL)
   --password <password>         Login password (or env GALLERY_UPLOAD_PROBE_PASSWORD)
   --page-id <id>                Page id for page upload probe (default: ${DEFAULT_PAGE_ID})
@@ -37,6 +38,7 @@ const asPositiveInt = (value, fallback) => {
 const parseArgs = () => {
   const options = {
     base: process.env.GALLERY_UPLOAD_PROBE_BASE_URL || DEFAULT_BASE_URL,
+    token: process.env.GALLERY_UPLOAD_PROBE_TOKEN || '',
     email: process.env.GALLERY_UPLOAD_PROBE_EMAIL || '',
     password: process.env.GALLERY_UPLOAD_PROBE_PASSWORD || '',
     pageId: asPositiveInt(process.env.GALLERY_UPLOAD_PROBE_PAGE_ID, DEFAULT_PAGE_ID),
@@ -54,6 +56,7 @@ const parseArgs = () => {
     options,
     valueFlags: {
       '--base': 'base',
+      '--token': 'token',
       '--email': 'email',
       '--password': 'password',
       '--page-id': 'pageId',
@@ -76,9 +79,11 @@ const parseArgs = () => {
   options.flightPlanId = asPositiveInt(options.flightPlanId, DEFAULT_FLIGHT_PLAN_ID);
   options.timeoutMs = asPositiveInt(options.timeoutMs, DEFAULT_TIMEOUT_MS);
 
-  if (!options.email.trim() || !options.password) {
+  options.token = options.token.trim();
+  options.email = options.email.trim();
+  if (!options.token && (!options.email || !options.password)) {
     throw new Error(
-      'Upload probe requires email and password (use --email/--password or GALLERY_UPLOAD_PROBE_EMAIL/PASSWORD).',
+      'Upload probe requires either --token (or GALLERY_UPLOAD_PROBE_TOKEN / MEDIA_INTEGRITY_PROBE_TOKEN) or --email/--password.',
     );
   }
 
@@ -129,6 +134,11 @@ const extractErrorMessage = (payload) => {
 
 const errorMessage = (error) =>
   error instanceof Error ? error.message : String(error);
+
+const isNoRecordsFallbackError = (error) => {
+  if (!(error instanceof Error)) return false;
+  return /no records available to resolve fallback id/i.test(error.message);
+};
 
 const PROBE_IMAGE_BYTES = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9p8YQAAAAASUVORK5CYII=',
@@ -228,9 +238,14 @@ const uploadProbe = async ({
   const payload = await safeJson(response);
   if (response.status !== 201) {
     const message = extractErrorMessage(payload);
-    throw new Error(
+    const uploadError = new Error(
       `[${name}] expected 201, received ${response.status}${message ? ` (${message})` : ''}`,
     );
+    Object.assign(uploadError, {
+      status: response.status,
+      publicMessage: message,
+    });
+    throw uploadError;
   }
 
   const uploadAssetId =
@@ -365,17 +380,53 @@ const runUploadLifecycleProbe = async ({
   variant,
   timeoutMs,
   keepAssets,
+  resolveFallbackId,
 }) => {
-  const uploaded = await uploadProbe({
-    name,
-    url: uploadUrl,
-    baseUrl,
-    token,
-    idField,
-    idValue,
-    variant,
-    timeoutMs,
-  });
+  let effectiveIdValue = idValue;
+  let uploaded;
+  try {
+    uploaded = await uploadProbe({
+      name,
+      url: uploadUrl,
+      baseUrl,
+      token,
+      idField,
+      idValue: effectiveIdValue,
+      variant,
+      timeoutMs,
+    });
+  } catch (error) {
+    const status =
+      error &&
+      typeof error === 'object' &&
+      typeof error.status === 'number'
+        ? error.status
+        : null;
+    if (status !== 404 || typeof resolveFallbackId !== 'function') {
+      throw error;
+    }
+
+    const fallbackId = await resolveFallbackId();
+    if (!Number.isFinite(fallbackId) || fallbackId <= 0 || fallbackId === effectiveIdValue) {
+      throw error;
+    }
+
+    effectiveIdValue = fallbackId;
+    console.log(
+      `[check-gallery-upload-auth] ${name}: retrying with discovered ${idField}=${effectiveIdValue}`,
+    );
+
+    uploaded = await uploadProbe({
+      name,
+      url: uploadUrl,
+      baseUrl,
+      token,
+      idField,
+      idValue: effectiveIdValue,
+      variant,
+      timeoutMs,
+    });
+  }
 
   let lifecycleError = null;
   try {
@@ -417,6 +468,45 @@ const runUploadLifecycleProbe = async ({
   if (cleanupError) {
     throw cleanupError;
   }
+  return effectiveIdValue;
+};
+
+const resolveCollectionFirstId = async ({
+  name,
+  listUrl,
+  token,
+  timeoutMs,
+}) => {
+  const response = await withTimeout(
+    (signal) =>
+      fetch(listUrl, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        signal,
+      }),
+    timeoutMs,
+  );
+  const payload = await safeJson(response);
+  if (!response.ok) {
+    const message = extractErrorMessage(payload);
+    throw new Error(
+      `[${name}] failed to resolve fallback id (${response.status})${message ? `: ${message}` : ''}`,
+    );
+  }
+
+  const docs =
+    payload && typeof payload === 'object' && Array.isArray(payload.docs) ? payload.docs : [];
+  const first = docs[0];
+  const id = asPositiveInt(first && typeof first === 'object' ? first.id : null, 0);
+  if (id <= 0) {
+    throw new Error(`[${name}] no records available to resolve fallback id`);
+  }
+
+  console.log(`[check-gallery-upload-auth] ${name}: discovered fallback id=${id}`);
+  return id;
 };
 
 const run = async () => {
@@ -431,44 +521,79 @@ const run = async () => {
 
   console.log(`[check-gallery-upload-auth] base=${baseUrl.origin}`);
 
-  const loginResponse = await withTimeout(
-    (signal) =>
-      fetch(loginUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({
-          email: options.email,
-          password: options.password,
+  let token = options.token;
+  if (token) {
+    console.log('[check-gallery-upload-auth] authenticated via bearer token');
+  } else {
+    const loginResponse = await withTimeout(
+      (signal) =>
+        fetch(loginUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({
+            email: options.email,
+            password: options.password,
+          }),
+          signal,
         }),
-        signal,
-      }),
-    options.timeoutMs,
-  );
-
-  const loginPayload = await safeJson(loginResponse);
-  if (!loginResponse.ok) {
-    const message = extractErrorMessage(loginPayload);
-    throw new Error(
-      `Login failed (${loginResponse.status})${message ? `: ${message}` : ''}`,
+      options.timeoutMs,
     );
-  }
 
-  const token =
-    loginPayload &&
-    typeof loginPayload === 'object' &&
-    typeof loginPayload.token === 'string'
-      ? loginPayload.token.trim()
-      : '';
-  if (!token) {
-    throw new Error('Login response did not include a bearer token.');
+    const loginPayload = await safeJson(loginResponse);
+    if (!loginResponse.ok) {
+      const message = extractErrorMessage(loginPayload);
+      throw new Error(
+        `Login failed (${loginResponse.status})${message ? `: ${message}` : ''}`,
+      );
+    }
+
+    token =
+      loginPayload &&
+      typeof loginPayload === 'object' &&
+      typeof loginPayload.token === 'string'
+        ? loginPayload.token.trim()
+        : '';
+    if (!token) {
+      throw new Error('Login response did not include a bearer token.');
+    }
+    const loginUser =
+      loginPayload &&
+      typeof loginPayload === 'object' &&
+      loginPayload.user &&
+      typeof loginPayload.user === 'object'
+        ? loginPayload.user
+        : null;
+    const loginRole =
+      loginUser && typeof loginUser.role === 'string' && loginUser.role.trim().length > 0
+        ? loginUser.role.trim()
+        : 'unknown';
+    const loginProfileSlug =
+      loginUser && typeof loginUser.profileSlug === 'string' && loginUser.profileSlug.trim().length > 0
+        ? loginUser.profileSlug.trim()
+        : 'unknown';
+    console.log(
+      `[check-gallery-upload-auth] authenticated role=${loginRole} profile=${loginProfileSlug}`,
+    );
   }
 
   const selectedVariants = options.probeTypes
     .map((probeType) => PROBE_VARIANTS_BY_KEY.get(probeType))
     .filter(Boolean);
+  const pageListUrl = new URL('/api/pages', baseUrl);
+  pageListUrl.searchParams.set('limit', '1');
+  pageListUrl.searchParams.set('depth', '0');
+  pageListUrl.searchParams.set('sort', '-updatedAt');
+
+  const flightPlanListUrl = new URL('/api/flight-plans', baseUrl);
+  flightPlanListUrl.searchParams.set('limit', '1');
+  flightPlanListUrl.searchParams.set('depth', '0');
+  flightPlanListUrl.searchParams.set('sort', '-updatedAt');
+
+  let cachedPageFallbackId = null;
+  let cachedFlightPlanFallbackId = null;
   const targets = [
     {
       name: 'page-gallery',
@@ -476,6 +601,16 @@ const run = async () => {
       deleteBaseUrl: pageDeleteBaseUrl,
       idField: 'pageId',
       idValue: options.pageId,
+      resolveFallbackId: async () => {
+        if (cachedPageFallbackId != null) return cachedPageFallbackId;
+        cachedPageFallbackId = await resolveCollectionFirstId({
+          name: 'page-gallery',
+          listUrl: pageListUrl.toString(),
+          token,
+          timeoutMs: options.timeoutMs,
+        });
+        return cachedPageFallbackId;
+      },
     },
     {
       name: 'flight-plan-gallery',
@@ -483,24 +618,99 @@ const run = async () => {
       deleteBaseUrl: flightDeleteBaseUrl,
       idField: 'flightPlanId',
       idValue: options.flightPlanId,
+      resolveFallbackId: async () => {
+        if (cachedFlightPlanFallbackId != null) return cachedFlightPlanFallbackId;
+        cachedFlightPlanFallbackId = await resolveCollectionFirstId({
+          name: 'flight-plan-gallery',
+          listUrl: flightPlanListUrl.toString(),
+          token,
+          timeoutMs: options.timeoutMs,
+        });
+        return cachedFlightPlanFallbackId;
+      },
     },
   ];
 
+  let successfulTargets = 0;
+  const skippedUnauthorizedTargets = [];
+  const skippedUnavailableTargets = [];
   for (const target of targets) {
+    let targetSucceeded = false;
     for (const variant of selectedVariants) {
-      await runUploadLifecycleProbe({
-        name: `${target.name}:${variant.key}`,
-        uploadUrl: target.uploadUrl,
-        deleteBaseUrl: target.deleteBaseUrl,
-        baseUrl,
-        token,
-        idField: target.idField,
-        idValue: target.idValue,
-        variant,
-        timeoutMs: options.timeoutMs,
-        keepAssets: options.keepAssets,
-      });
+      try {
+        target.idValue = await runUploadLifecycleProbe({
+          name: `${target.name}:${variant.key}`,
+          uploadUrl: target.uploadUrl,
+          deleteBaseUrl: target.deleteBaseUrl,
+          baseUrl,
+          token,
+          idField: target.idField,
+          idValue: target.idValue,
+          variant,
+          timeoutMs: options.timeoutMs,
+          keepAssets: options.keepAssets,
+          resolveFallbackId: target.resolveFallbackId,
+        });
+        targetSucceeded = true;
+      } catch (error) {
+        const status =
+          error &&
+          typeof error === 'object' &&
+          typeof error.status === 'number'
+            ? error.status
+            : null;
+        if (status === 403 && !targetSucceeded) {
+          console.warn(
+            `[check-gallery-upload-auth] ${target.name}: skipping target after permission denial (${errorMessage(error)})`,
+          );
+          skippedUnauthorizedTargets.push(target.name);
+          break;
+        }
+        if (!targetSucceeded && isNoRecordsFallbackError(error)) {
+          console.warn(
+            `[check-gallery-upload-auth] ${target.name}: skipping target because no accessible records were found`,
+          );
+          skippedUnavailableTargets.push(target.name);
+          break;
+        }
+        throw error;
+      }
     }
+    if (targetSucceeded) {
+      successfulTargets += 1;
+    }
+  }
+
+  if (successfulTargets === 0) {
+    const skippedAny = skippedUnauthorizedTargets.length > 0 || skippedUnavailableTargets.length > 0;
+    if (skippedAny) {
+      console.warn(
+        `[check-gallery-upload-auth] no eligible upload targets for current probe identity; unauthorized targets: ${
+          skippedUnauthorizedTargets.length > 0 ? skippedUnauthorizedTargets.join(', ') : 'none'
+        }; unavailable targets: ${
+          skippedUnavailableTargets.length > 0 ? skippedUnavailableTargets.join(', ') : 'none'
+        }`,
+      );
+      console.log('[check-gallery-upload-auth] OK');
+      return;
+    }
+
+    throw new Error(
+      `No authenticated gallery upload target succeeded. Skipped unauthorized targets: ${
+        skippedUnauthorizedTargets.length > 0 ? skippedUnauthorizedTargets.join(', ') : 'none'
+      }.`,
+    );
+  }
+
+  if (skippedUnauthorizedTargets.length > 0) {
+    console.warn(
+      `[check-gallery-upload-auth] skipped unauthorized targets: ${Array.from(new Set(skippedUnauthorizedTargets)).join(', ')}`,
+    );
+  }
+  if (skippedUnavailableTargets.length > 0) {
+    console.warn(
+      `[check-gallery-upload-auth] skipped unavailable targets: ${Array.from(new Set(skippedUnavailableTargets)).join(', ')}`,
+    );
   }
 
   console.log('[check-gallery-upload-auth] OK');

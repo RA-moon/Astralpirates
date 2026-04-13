@@ -153,6 +153,33 @@ describe('PrivilegedControlsFlyout', () => {
     expect(openEditorMock).toHaveBeenCalledOnce();
   });
 
+  it('requires captain admin edit mode before showing static page editing controls', async () => {
+    setSessionRole('captain');
+    canEditRef.value = true;
+    const wrapper = mount(PrivilegedControlsFlyout, {
+      props: { pageData },
+    });
+    await nextTick();
+
+    await wrapper.find('.privileged-controls-flyout__trigger').trigger('click');
+    await nextTick();
+    expect(wrapper.find('.privileged-controls-flyout__page-edit').exists()).toBe(false);
+    expect(wrapper.text()).toContain('Enable admin edit to unlock static-page editing in god mode.');
+
+    const switches = wrapper.findAll('.ui-switch');
+    await switches[0]?.trigger('click');
+    await nextTick();
+
+    const enabledSwitches = wrapper.findAll('.ui-switch');
+    await enabledSwitches[1]?.trigger('click');
+    await nextTick();
+
+    const pageEditButton = wrapper.find('.privileged-controls-flyout__page-edit');
+    expect(pageEditButton.exists()).toBe(true);
+    await pageEditButton.trigger('click');
+    expect(openEditorMock).toHaveBeenCalledOnce();
+  });
+
   it('renders when only extra role-scoped controls are provided', async () => {
     setSessionRole('crew');
     const wrapper = mount(PrivilegedControlsFlyout, {

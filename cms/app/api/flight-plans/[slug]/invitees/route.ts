@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { authenticateRequest } from '@/app/api/_lib/auth';
 import { corsEmpty, corsJson } from '@/app/api/_lib/cors';
 import {
+  hasAdminEditOverrideForUser,
   loadMembershipWithOwnerFallback,
   normaliseId,
   resolveFlightPlanBySlug,
@@ -50,23 +51,30 @@ export async function GET(
   }
 
   const ownerId = normaliseId((flightPlanDoc as { owner?: any })?.owner);
-  const membership = await loadMembershipWithOwnerFallback({
-    payload: auth.payload,
-    flightPlanId,
+  const hasAdminEditOverride = hasAdminEditOverrideForUser({
     userId: auth.user.id,
-    ownerIdHint: ownerId ?? undefined,
+    websiteRole: auth.user.role,
+    adminMode: auth.adminMode,
   });
-  if (
-    !membership ||
-    membership.status !== 'accepted' ||
-    (membership.role !== 'owner' && membership.role !== 'crew')
-  ) {
-    return corsJson(
-      req,
-      { error: 'Only the captain or crew organisers can search for invitees.' },
-      { status: 403 },
-      METHODS,
-    );
+  if (!hasAdminEditOverride) {
+    const membership = await loadMembershipWithOwnerFallback({
+      payload: auth.payload,
+      flightPlanId,
+      userId: auth.user.id,
+      ownerIdHint: ownerId ?? undefined,
+    });
+    if (
+      !membership ||
+      membership.status !== 'accepted' ||
+      (membership.role !== 'owner' && membership.role !== 'crew')
+    ) {
+      return corsJson(
+        req,
+        { error: 'Only the captain or crew organisers can search for invitees unless captain admin edit mode is enabled.' },
+        { status: 403 },
+        METHODS,
+      );
+    }
   }
 
   const query = sanitiseQuery(req.nextUrl.searchParams.get('q'));

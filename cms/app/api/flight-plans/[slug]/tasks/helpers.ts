@@ -2,7 +2,10 @@ import type { NextRequest } from 'next/server';
 import type { Payload } from 'payload';
 
 import { FlightPlanTaskStateSchema, type FlightPlanTaskState } from '@astralpirates/shared/api-contracts';
+import type { EffectiveAdminMode } from '@astralpirates/shared/adminMode';
 import {
+  ensureCrewMembership,
+  hasAdminEditOverrideForUser,
   loadMembershipWithOwnerFallback,
   normaliseId,
   type FlightPlanMembershipRecord,
@@ -15,8 +18,9 @@ import {
 } from '@/app/api/_lib/content';
 
 type AuthContext = {
-  user: { id: number } | null;
+  user: { id: number; role?: unknown } | null;
   payload: Payload;
+  adminMode?: EffectiveAdminMode | null;
 };
 
 export const parseRequestBody = async (req: NextRequest): Promise<Record<string, unknown>> => {
@@ -82,12 +86,27 @@ export const ensureViewerMembership = async ({
     };
   }
 
-  const membership = await loadMembershipWithOwnerFallback({
+  let membership = await loadMembershipWithOwnerFallback({
     payload: auth.payload,
     flightPlanId,
     userId: auth.user.id,
     ownerIdHint: ownerId ?? undefined,
   });
+  if (
+    (!membership || membership.status !== 'accepted') &&
+    hasAdminEditOverrideForUser({
+      userId: auth.user.id,
+      websiteRole: auth.user.role,
+      adminMode: auth.adminMode,
+    })
+  ) {
+    membership = await ensureCrewMembership({
+      payload: auth.payload,
+      flightPlanId,
+      userId: auth.user.id,
+      inviterId: ownerId ?? auth.user.id,
+    });
+  }
   if (!membership || membership.status !== 'accepted') {
     return {
       response: corsJson(req, { error: 'Crew access required.' }, { status: 403 }, methods),

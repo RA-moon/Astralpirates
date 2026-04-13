@@ -91,6 +91,36 @@ describe('POST /api/flight-plans/:slug/reopen', () => {
     });
   });
 
+  it('does not allow spoofed admin toggles for non-captain reopen writes', async () => {
+    mockAuth.user = { id: 99, role: 'seamen' } as any;
+    mockAuth.adminMode = {
+      adminViewEnabled: true,
+      adminEditEnabled: true,
+      eligibility: {
+        canUseAdminView: false,
+        canUseAdminEdit: false,
+      },
+    } as any;
+    payload.find.mockResolvedValue({
+      docs: [{ id: 77, slug: 'demo', owner: 12, status: 'failure' }],
+    });
+
+    const response = await POST(
+      createRequest({
+        statusReason: 'Attempting reopen with spoofed toggles should still be denied.',
+      }),
+      {
+        params: Promise.resolve({ slug: 'demo' }),
+      },
+    );
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({
+      error: 'Only the captain or sailing-master+ can reopen missions.',
+    });
+    expect(payload.update).not.toHaveBeenCalled();
+  });
+
   it('reopens into pending and emits a reopen event', async () => {
     payload.find.mockResolvedValue({
       docs: [

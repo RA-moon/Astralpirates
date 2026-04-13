@@ -2,7 +2,11 @@ import type { NextRequest } from 'next/server';
 
 import { authenticateRequest, buildRequestForUser } from '@/app/api/_lib/auth';
 import { corsEmpty, corsJson } from '@/app/api/_lib/cors';
-import { loadMembershipsForUser, normaliseId } from '@/app/api/_lib/flightPlanMembers';
+import {
+  hasAdminEditOverrideForUser,
+  loadMembershipsForUser,
+  normaliseId,
+} from '@/app/api/_lib/flightPlanMembers';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -74,7 +78,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const { payload, user } = await authenticateRequest(req);
+  const { payload, user, adminMode } = await authenticateRequest(req);
   if (!user) {
     return corsJson(req, { error: 'Authentication required.' }, { status: 401 }, METHODS);
   }
@@ -94,12 +98,19 @@ export async function PUT(req: NextRequest) {
   const muted = resolveMuted(body.muted);
 
   try {
+    const hasAdminEditOverride = hasAdminEditOverrideForUser({
+      userId: user.id,
+      websiteRole: user.role,
+      adminMode,
+    });
     const memberships = await loadMembershipsForUser({
       payload,
       userId: user.id,
       acceptedOnly: true,
     });
-    const hasAccess = memberships.some((membership) => membership.flightPlanId === flightPlanId);
+    const hasAccess =
+      hasAdminEditOverride ||
+      memberships.some((membership) => membership.flightPlanId === flightPlanId);
 
     if (!hasAccess) {
       return corsJson(req, { error: 'Not a member of this flight plan.' }, { status: 403 }, METHODS);
